@@ -1,0 +1,14 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Multi:jar">
+    <output-path>$PROJECT_DIR$/jar</output-path>
+    <root id="archive" name="Multi.jar">
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/jar/META-INF/MANIFEST.MF" />
+      </element>
+      <element id="module-output" name="Multi" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/Libs/jep.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/Libs/mysql.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/Libs/joda-time-1.6.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

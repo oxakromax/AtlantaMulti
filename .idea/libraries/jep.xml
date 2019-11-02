@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="jep">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/Libs/jep.jar!/" />
+      <root url="jar://$PROJECT_DIR$/Libs/mysql.jar!/" />
+      <root url="jar://$PROJECT_DIR$/Libs/joda-time-1.6.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
