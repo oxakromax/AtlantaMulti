@@ -431,12 +431,12 @@ public class GestorSQL {
     public static String GET_CONTRASEÑA_CUENTA(final String cuenta) {
         String str = "";
         try {
-            String consultaSQL = "SELECT `contrasena` FROM `cuentas` WHERE `cuenta` = ? ;";
+			String consultaSQL = "SELECT `contraseña` FROM `cuentas` WHERE `cuenta` = ? ;";
             final PreparedStatement declaracion = transaccionSQL(consultaSQL);
             declaracion.setString(1, cuenta);
             final ResultSet resultado = consultaSQL(declaracion);
             if (resultado.first()) {
-                str = resultado.getString("contrasena");
+				str = resultado.getString("contraseña");
             }
             cerrarResultado(resultado);
         } catch (final Exception e) {
@@ -450,7 +450,7 @@ public class GestorSQL {
                                            final String cumpleaños) {
         String str = "";
         try {
-            final String consultaSQL = "SELECT `contrasena` FROM `cuentas` WHERE `cuenta` = ? AND `respuestas` = ? AND `email` = ? AND `cumpleaños` = ? ;";
+			final String consultaSQL = "SELECT `contraseña` FROM `cuentas` WHERE `cuenta` = ? AND `respuestas` = ? AND `email` = ? AND `cumpleaños` = ? ;";
             final PreparedStatement declaracion = transaccionSQL(consultaSQL);
             declaracion.setString(1, cuenta);
             declaracion.setString(2, respuesta);
@@ -458,7 +458,7 @@ public class GestorSQL {
             declaracion.setString(4, cumpleaños);
             final ResultSet resultado = consultaSQL(declaracion);
             if (resultado.first()) {
-                str = resultado.getString("contrasena");
+				str = resultado.getString("contraseña");
             }
             cerrarResultado(resultado);
         } catch (final Exception e) {
@@ -472,7 +472,7 @@ public class GestorSQL {
                                             final String nuevaPass, final int id) {
         String str = "";
         try {
-            final String consultaSQL = "SELECT `contrasena` FROM `cuentas` WHERE `cuenta` = ? AND `respuesta` = ? AND `email` = ? ;";
+			final String consultaSQL = "SELECT `contraseña` FROM `cuentas` WHERE `cuenta` = ? AND `respuesta` = ? AND `email` = ? ;";
             final PreparedStatement declaracion = transaccionSQL(consultaSQL);
             declaracion.setString(1, cuenta);
             declaracion.setString(2, respuesta);
@@ -495,7 +495,7 @@ public class GestorSQL {
     }
 
     private static void CAMBIAR_CONTRASEÑA_CUENTA(final String contraseña, final int cuentaID) {
-        final String consultaSQL = "UPDATE `cuentas` SET `contrasena`= ? WHERE `id`= ? ;";
+		final String consultaSQL = "UPDATE `cuentas` SET `contraseña`= ? WHERE `id`= ? ;";
         try {
             final PreparedStatement declaracion = transaccionSQL(consultaSQL);
             declaracion.setString(1, contraseña);

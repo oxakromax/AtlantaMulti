@@ -10,8 +10,8 @@ import java.util.TreeMap;
 public class Cuenta {
     private final int _ID;
     private final String _nombre;
-    private LoginSocket _entradaGeneral;
     private final Map<Integer, Integer> _personajes = new TreeMap<>();
+    private LoginSocket _entradaGeneral;
 
     public Cuenta(final int ID, final String nombre, final String apodo) {
         _ID = ID;
@@ -66,15 +66,15 @@ public class Cuenta {
         return _entradaGeneral;
     }
 
+    public void setSocket(final LoginSocket socket) {
+        _entradaGeneral = socket;
+    }
+
     public void pararTimer() {
         try {
             _entradaGeneral.pararTimer();
         } catch (final Exception ignored) {
         }
-    }
-
-    public void setSocket(final LoginSocket socket) {
-        _entradaGeneral = socket;
     }
 
     public Map<Integer, Integer> getPersonajes() {

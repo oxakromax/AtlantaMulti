@@ -8,8 +8,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Mundo {
-    private static final Map<Integer, Cuenta> Cuentas = new ConcurrentHashMap<>();
     public static final Map<Integer, Servidor> Servidores = new ConcurrentHashMap<>();
+    private static final Map<Integer, Cuenta> Cuentas = new ConcurrentHashMap<>();
 
     public static void crearMultiServer() {
         System.out.println("Creación del MultiServidor:");

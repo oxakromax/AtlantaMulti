@@ -12,24 +12,6 @@ class Consola extends Thread {
         this.start();
     }
 
-    public void run() {
-        while (CONSOLA_ACTIVADA) {
-            try {
-                final BufferedReader b = new BufferedReader(new InputStreamReader(System.in));
-                String linea = b.readLine();
-                String str = "";
-                try {
-                    str = linea.substring(linea.indexOf(" ") + 1);
-                    linea = linea.split(" ")[0];
-                } catch (final Exception ignored) {
-                }
-                leerComandos(linea, str);
-            } catch (final Exception e) {
-                System.out.println("Error al ingresar texto a la consola");
-            }
-        }
-    }
-
     private static void leerComandos(final String linea, final String valor) {
         try {
             switch (linea.toUpperCase()) {
@@ -70,6 +52,24 @@ class Consola extends Thread {
             System.out.println("Comando realizado: " + linea + " -> " + valor);
         } catch (final Exception e) {
             System.err.println("Ocurrio un error con el comando " + linea);
+        }
+    }
+
+    public void run() {
+        while (CONSOLA_ACTIVADA) {
+            try {
+                final BufferedReader b = new BufferedReader(new InputStreamReader(System.in));
+                String linea = b.readLine();
+                String str = "";
+                try {
+                    str = linea.substring(linea.indexOf(" ") + 1);
+                    linea = linea.split(" ")[0];
+                } catch (final Exception ignored) {
+                }
+                leerComandos(linea, str);
+            } catch (final Exception e) {
+                System.out.println("Error al ingresar texto a la consola");
+            }
         }
     }
 }

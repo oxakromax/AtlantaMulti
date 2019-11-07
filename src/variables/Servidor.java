@@ -9,14 +9,14 @@ public class Servidor {
     public static final int SERVIDOR_OFFLINE = 0;
     public static final int SERVIDOR_ONLINE = 1;
     public static final int SERVIDOR_SAVING = 2;
-    private int _estado;
     private final int _puerto;
     private final int _id;
+    private final Map<String, Integer> _ips = new ConcurrentHashMap<>();
+    private int _estado;
     private String _IP = "127.0.0.1";
     private SincronizadorSocket _conector;
     private int _conectados;
     private int _prioridad;
-    private final Map<String, Integer> _ips = new ConcurrentHashMap<>();
 
     public Servidor(final int id, final int puerto, final int estado) {
         _id = id;
@@ -55,8 +55,16 @@ public class Servidor {
         return _estado;
     }
 
+    public void setEstado(final int estado) {
+        _estado = estado;
+    }
+
     public SincronizadorSocket getConector() {
         return _conector;
+    }
+
+    public void setConector(final SincronizadorSocket con) {
+        _conector = con;
     }
 
     public int getConectados() {
@@ -65,14 +73,6 @@ public class Servidor {
 
     public void setConectados(final int conectados) {
         _conectados = conectados;
-    }
-
-    public void setEstado(final int estado) {
-        _estado = estado;
-    }
-
-    public void setConector(final SincronizadorSocket con) {
-        _conector = con;
     }
 
     public void setPrioridad(int prioridad) {

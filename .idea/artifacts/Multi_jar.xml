@@ -5,7 +5,7 @@
       <element id="directory" name="META-INF">
         <element id="file-copy" path="$PROJECT_DIR$/jar/META-INF/MANIFEST.MF" />
       </element>
-      <element id="module-output" name="Multi" />
+      <element id="module-output" name="AtlantaMulti" />
       <element id="extracted-dir" path="$PROJECT_DIR$/Libs/jep.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/Libs/mysql.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/Libs/joda-time-1.6.jar" path-in-jar="/" />

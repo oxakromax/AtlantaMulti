@@ -3,6 +3,7 @@ package estaticos;
 import java.nio.charset.StandardCharsets;
 
 public class Encriptador {
+    public static final String NUMEROS = "0123456789";
     private static final char[] HASH = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',
             'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
             'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-',
@@ -11,7 +12,6 @@ public class Encriptador {
     private static final String ABC_MAY = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private static final String VOCALES = "aeiouAEIOU";
     private static final String CONSONANTES = "bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ";
-    public static final String NUMEROS = "0123456789";
     private static final String GUIONES = "_-";
 
     public static String palabraAleatorio(final int limite) {
@@ -95,7 +95,7 @@ public class Encriptador {
                 if (((i & 15) << 4 | o & 15) == Integer.parseInt(split[cantidad])) {
                     final char A = (char) (i + 48);
                     final char B = (char) (o + 48);
-                    encriptado.append(Character.toString(A) + Character.toString(B));
+                    encriptado.append(Character.toString(A) + B);
                     i = 0;
                     o = 0;
                     cantidad++;

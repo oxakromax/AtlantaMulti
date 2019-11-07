@@ -17,10 +17,6 @@ public class MainMultiservidor {
     public static String SONIDO_BIENVENIDA = "";
     public static String URL_LINK_MP3 = "http://localhost/mp3/";
     public static String DIRECTORIO_LOCAL_MP3 = "C://wamp/www/mp3/";
-    private static Calendar DATE_ERROR;
-    private static Calendar DATE_ESTADISTICA;
-    private static PrintStream LOG_ERRORES;
-    private static PrintStream LOG_ESTADISTICAS;
     public static boolean ENCRIPTAR_IP;
     public static boolean PERMITIR_MULTICUENTA = true;
     public static boolean MOSTRAR_RECIBIDOS;
@@ -29,7 +25,6 @@ public class MainMultiservidor {
     public static boolean MODO_DEBUG;
     public static boolean PARAM_ANTI_DDOS;
     public static boolean PARAM_MOSTRAR_IP;
-    private static boolean PARAM_MOSTRAR_EXCEPTIONS;
     public static boolean ACTIVAR_FILA_ESPERA = true;
     public static boolean ACCESO_VIP;
     public static int PUERTO_MULTISERVIDOR = 444;
@@ -46,10 +41,15 @@ public class MainMultiservidor {
     public static int SEGUNDOS_ESTADISTICAS = 300;
     public static int SEGUNDOS_TRANSACCION_BD = 10;
     public static int SEGUNDOS_ESPERA = 15;
-    private static int LIMITE_JUGADORES = 100;
     // public static int MAX_CONEXIONES_POR_IP = 8;
     public static byte MAX_CUENTAS_POR_IP = 8;
     public static byte MAX_CONEXION_POR_SEGUNDO = 10;
+    private static Calendar DATE_ERROR;
+    private static Calendar DATE_ESTADISTICA;
+    private static PrintStream LOG_ERRORES;
+    private static PrintStream LOG_ESTADISTICAS;
+    private static boolean PARAM_MOSTRAR_EXCEPTIONS;
+    private static int LIMITE_JUGADORES = 100;
 
     public static void main(final String[] args) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> MainMultiservidor.cerrarServer()));

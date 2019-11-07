@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/Multi.iml" filepath="$PROJECT_DIR$/Multi.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AtlantaMulti.iml" filepath="$PROJECT_DIR$/AtlantaMulti.iml" />
     </modules>
   </component>
 </project>
