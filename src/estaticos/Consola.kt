@@ -1,75 +1,59 @@
-package estaticos;
+package estaticos
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
-class Consola extends Thread {
-    private static boolean CONSOLA_ACTIVADA = true;
-
-    public Consola() {
-        this.setDaemon(true);
-        this.setPriority(7);
-        this.start();
-    }
-
-    private static void leerComandos(final String linea, final String valor) {
-        try {
-            switch (linea.toUpperCase()) {
-                case "ENVIADOS":
-                    MainMultiservidor.MOSTRAR_ENVIOS = valor.equalsIgnoreCase("true");
-                    break;
-                case "RECIBIDOS":
-                    MainMultiservidor.MOSTRAR_RECIBIDOS = valor.equalsIgnoreCase("true");
-                    break;
-                case "DEBUG":
-                    MainMultiservidor.MODO_DEBUG = valor.equalsIgnoreCase("true");
-                    break;
-                case "DESACTIVAR":
-                case "DESACTIVE":
-                case "DESACTIVER":
-                    CONSOLA_ACTIVADA = false;
-                    System.out.println("CONSOLA DESACTIVADA");
-                    break;
-                // case "DESLOGUEAR" :
-                // case "DESLOGUEADOS" :
-                // case "LOGS0" :
-                // GestorSQL.UPDATE_CUENTAS_LOG_CERO();
-                // System.out.println("Logs 0");
-                // break;
-                case "RELOG":
-                case "RECARGAR":
-                    MainMultiservidor.cargarConfiguracion();
-                    System.out.println("Se recargo la config correctamente");
-                    break;
-                case "EXIT":
-                case "RESET":
-                    System.exit(0);
-                    break;
-                default:
-                    System.out.println("Comando no existe");
-                    return;
-            }
-            System.out.println("Comando realizado: " + linea + " -> " + valor);
-        } catch (final Exception e) {
-            System.err.println("Ocurrio un error con el comando " + linea);
-        }
-    }
-
-    public void run() {
+internal class Consola : Thread() {
+    override fun run() {
         while (CONSOLA_ACTIVADA) {
             try {
-                final BufferedReader b = new BufferedReader(new InputStreamReader(System.in));
-                String linea = b.readLine();
-                String str = "";
+                val b = BufferedReader(InputStreamReader(System.`in`))
+                var linea = b.readLine()
+                var str = ""
                 try {
-                    str = linea.substring(linea.indexOf(" ") + 1);
-                    linea = linea.split(" ")[0];
-                } catch (final Exception ignored) {
+                    str = linea.substring(linea.indexOf(" ") + 1)
+                    linea = linea.split(" ".toRegex()).toTypedArray()[0]
+                } catch (ignored: Exception) {
                 }
-                leerComandos(linea, str);
-            } catch (final Exception e) {
-                System.out.println("Error al ingresar texto a la consola");
+                leerComandos(linea, str)
+            } catch (e: Exception) {
+                println("Error al ingresar texto a la consola")
             }
         }
+    }
+
+    companion object {
+        private var CONSOLA_ACTIVADA = true
+        private fun leerComandos(linea: String, valor: String) {
+            try {
+                when (linea.toUpperCase()) {
+                    "ENVIADOS" -> MainMultiservidor.MOSTRAR_ENVIOS = valor.equals("true", ignoreCase = true)
+                    "RECIBIDOS" -> MainMultiservidor.MOSTRAR_RECIBIDOS = valor.equals("true", ignoreCase = true)
+                    "DEBUG" -> MainMultiservidor.MODO_DEBUG = valor.equals("true", ignoreCase = true)
+                    "DESACTIVAR", "DESACTIVE", "DESACTIVER" -> {
+                        CONSOLA_ACTIVADA = false
+                        println("CONSOLA DESACTIVADA")
+                    }
+                    "RELOG", "RECARGAR" -> {
+                        MainMultiservidor.cargarConfiguracion()
+                        println("Se recargo la config correctamente")
+                    }
+                    "EXIT", "RESET" -> System.exit(0)
+                    else -> {
+                        println("Comando no existe")
+                        return
+                    }
+                }
+                println("Comando realizado: $linea -> $valor")
+            } catch (e: Exception) {
+                System.err.println("Ocurrio un error con el comando $linea")
+            }
+        }
+    }
+
+    init {
+        this.isDaemon = true
+        priority = 7
+        start()
     }
 }

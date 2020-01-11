@@ -1,34 +1,34 @@
-package sincronizador;
+package sincronizador
 
-import estaticos.MainMultiservidor;
+import estaticos.MainMultiservidor
+import java.net.ServerSocket
 
-import java.net.ServerSocket;
-import java.net.Socket;
-
-public class SincronizadorServer implements Runnable {
-    private static ServerSocket _serverSocket;
-
-    public SincronizadorServer() {
+class SincronizadorServer : Runnable {
+    override fun run() {
         try {
-            _serverSocket = new ServerSocket(MainMultiservidor.PUERTO_SINCRONIZADOR);
-            Thread _thread = new Thread(this);
-            _thread.setDaemon(true);
-            _thread.start();
-        } catch (Exception e) {
-            if (MainMultiservidor.MOSTRAR_SINCRONIZACION) {
-                System.out.println("NO SE PUEDE CREAR EL SINCRONIZADOR SERVER");
+            while (true) {
+                val socket = _serverSocket!!.accept()
+                SincronizadorSocket(socket)
             }
-            e.printStackTrace();
+        } catch (ignored: Exception) {
         }
     }
 
-    public void run() {
+    companion object {
+        private var _serverSocket: ServerSocket? = null
+    }
+
+    init {
         try {
-            while (true) {
-                Socket socket = _serverSocket.accept();
-                new SincronizadorSocket(socket);
+            _serverSocket = ServerSocket(MainMultiservidor.PUERTO_SINCRONIZADOR)
+            val _thread = Thread(this)
+            _thread.isDaemon = true
+            _thread.start()
+        } catch (e: Exception) {
+            if (MainMultiservidor.MOSTRAR_SINCRONIZACION) {
+                println("NO SE PUEDE CREAR EL SINCRONIZADOR SERVER")
             }
-        } catch (Exception ignored) {
+            e.printStackTrace()
         }
     }
 }

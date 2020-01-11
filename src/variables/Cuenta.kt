@@ -1,104 +1,68 @@
-package variables;
+package variables
 
-import estaticos.GestorSQL;
-import login.LoginSocket;
+import estaticos.GestorSQL
+import login.LoginSocket
+import java.util.*
 
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
+class Cuenta(val id: Int, val nombre: String, apodo: String?) {
+    private val _personajes: MutableMap<Int, Int> = TreeMap()
+    var socket: LoginSocket? = null
 
-public class Cuenta {
-    private final int _ID;
-    private final String _nombre;
-    private final Map<Integer, Integer> _personajes = new TreeMap<>();
-    private LoginSocket _entradaGeneral;
+    val tiempoAbono: Long
+        get() = Math.max(0, GestorSQL.GET_ABONO(nombre) - System.currentTimeMillis())
 
-    public Cuenta(final int ID, final String nombre, final String apodo) {
-        _ID = ID;
-        _nombre = nombre;
-    }
+    val actualizar: Byte
+        get() = GestorSQL.GET_ACTUALIZAR(nombre)
 
-    public int getID() {
-        return _ID;
-    }
+    val contraseÃ±a: String
+        get() = GestorSQL.GET_CONTRASEÃ‘A_CUENTA(nombre)
 
-    public String getNombre() {
-        return _nombre;
-    }
+    val apodo: String
+        get() = GestorSQL.GET_APODO(nombre)
 
-    public long getTiempoAbono() {
-        return Math.max(0, GestorSQL.GET_ABONO(_nombre) - System.currentTimeMillis());
-    }
+    val idioma: String
+        get() = GestorSQL.GET_IDIOMA(nombre)
 
-    public byte getActualizar() {
-        return GestorSQL.GET_ACTUALIZAR(_nombre);
-    }
+    val pregunta: String
+        get() = GestorSQL.GET_PREGUNTA_SECRETA(nombre)
 
-    public String getContraseña() {
-        return GestorSQL.GET_CONTRASEÑA_CUENTA(_nombre);
-    }
+    val respuesta: String
+        get() = GestorSQL.GET_RESPUESTA_SECRETA(nombre)
 
-    public String getApodo() {
-        return GestorSQL.GET_APODO(_nombre);
-    }
+    val rango: Int
+        get() = GestorSQL.GET_RANGO(nombre).toInt()
 
-    public String getIdioma() {
-        return GestorSQL.GET_IDIOMA(_nombre);
-    }
+    val abono: Long
+        get() = Math.max(0, GestorSQL.GET_ABONO(nombre) - System.currentTimeMillis())
 
-    public String getPregunta() {
-        return GestorSQL.GET_PREGUNTA_SECRETA(_nombre);
-    }
-
-    public String getRespuesta() {
-        return GestorSQL.GET_RESPUESTA_SECRETA(_nombre);
-    }
-
-    public int getRango() {
-        return GestorSQL.GET_RANGO(_nombre);
-    }
-
-    public long getAbono() {
-        return Math.max(0, GestorSQL.GET_ABONO(_nombre) - System.currentTimeMillis());
-    }
-
-    public LoginSocket getSocket() {
-        return _entradaGeneral;
-    }
-
-    public void setSocket(final LoginSocket socket) {
-        _entradaGeneral = socket;
-    }
-
-    public void pararTimer() {
+    fun pararTimer() {
         try {
-            _entradaGeneral.pararTimer();
-        } catch (final Exception ignored) {
+            socket!!.pararTimer()
+        } catch (ignored: Exception) {
         }
     }
 
-    public Map<Integer, Integer> getPersonajes() {
-        return _personajes;
+    val personajes: Map<Int, Int>
+        get() = _personajes
+
+    fun setPersonajes(servidor: Int, cantidad: Int) {
+        _personajes[servidor] = cantidad
     }
 
-    public void setPersonajes(int servidor, int cantidad) {
-        _personajes.put(servidor, cantidad);
-    }
-
-    public String getStringPersonajes() {
-        try {
-            final StringBuilder str = new StringBuilder();
-            for (final Entry<Integer, Integer> entry : _personajes.entrySet()) {
-                if (entry.getValue() < 1) {
-                    continue;
+    val stringPersonajes: String
+        get() = try {
+            val str = StringBuilder()
+            for ((key, value) in _personajes) {
+                if (value < 1) {
+                    continue
                 }
-                str.append("|" + entry.getKey() + "," + entry.getValue());
+                str.append("|$key,$value")
             }
-            return str.toString();
-        } catch (final NullPointerException e) {
-            return "";
-        } catch (final Exception e) {
-            return getStringPersonajes();
+            str.toString()
+        } catch (e: NullPointerException) {
+            ""
+        } catch (e: Exception) {
+            stringPersonajes
         }
-    }
+
 }

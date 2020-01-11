@@ -1,319 +1,233 @@
-package estaticos;
+package estaticos
 
-import login.LoginServer;
-import sincronizador.SincronizadorServer;
-import variables.Servidor;
+import login.LoginServer
+import sincronizador.SincronizadorServer
+import variables.Servidor
+import java.io.*
+import java.util.*
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Calendar;
-
-public class MainMultiservidor {
-    public static final boolean ES_LOCALHOST = false;
+object MainMultiservidor {
+    const val ES_LOCALHOST = false
     //
-    //
-    //
-    //
-    public static String SONIDO_BIENVENIDA = "";
-    public static String URL_LINK_MP3 = "http://localhost/mp3/";
-    public static String DIRECTORIO_LOCAL_MP3 = "C://wamp/www/mp3/";
-    public static boolean ENCRIPTAR_IP;
-    public static boolean PERMITIR_MULTICUENTA = true;
-    public static boolean MOSTRAR_RECIBIDOS;
-    public static boolean MOSTRAR_ENVIOS;
-    public static boolean MOSTRAR_SINCRONIZACION;
-    public static boolean MODO_DEBUG;
-    public static boolean PARAM_ANTI_DDOS;
-    public static boolean PARAM_MOSTRAR_IP;
-    public static boolean ACTIVAR_FILA_ESPERA = true;
-    public static boolean ACCESO_VIP;
-    public static int PUERTO_MULTISERVIDOR = 444;
-    public static int PUERTO_SINCRONIZADOR = 19999;
+//
+//
+//
+    var SONIDO_BIENVENIDA = ""
+    var URL_LINK_MP3 = "http://localhost/mp3/"
+    var DIRECTORIO_LOCAL_MP3 = "C://wamp/www/mp3/"
+    var ENCRIPTAR_IP = false
+    var PERMITIR_MULTICUENTA = true
+    var MOSTRAR_RECIBIDOS = false
+    var MOSTRAR_ENVIOS = false
+    var MOSTRAR_SINCRONIZACION = false
+    var MODO_DEBUG = false
+    var PARAM_ANTI_DDOS = false
+    var PARAM_MOSTRAR_IP = false
+    var ACTIVAR_FILA_ESPERA = true
+    var ACCESO_VIP = false
+    var PUERTO_MULTISERVIDOR = 444
+    var PUERTO_SINCRONIZADOR = 19999
     // public static ArrayList<String> IP_SERVIDOR = new ArrayList<String>();// 25.91.217.194 -
-    // 213.152.29.73
-    public static String VERSION_CLIENTE = "1.29.1";
-    public static String BD_HOST = "localhost";
-    public static String BD_USUARIO = "root";
-    public static String BD_PASS = "";
-    public static String BD_CUENTAS = "";
-    public static int MILISEGUNDOS_SIG_CONEXION = 500;
-    public static int SEGUNDOS_INFO_STATUS = 60;
-    public static int SEGUNDOS_ESTADISTICAS = 300;
-    public static int SEGUNDOS_TRANSACCION_BD = 10;
-    public static int SEGUNDOS_ESPERA = 15;
+// 213.152.29.73
+    var VERSION_CLIENTE = "1.29.1"
+    var BD_HOST = "localhost"
+    var BD_USUARIO = "root"
+    var BD_PASS = ""
+    var BD_CUENTAS = ""
+    var MILISEGUNDOS_SIG_CONEXION = 500
+    var SEGUNDOS_INFO_STATUS = 60
+    var SEGUNDOS_ESTADISTICAS = 300
+    var SEGUNDOS_TRANSACCION_BD = 10
+    var SEGUNDOS_ESPERA = 15
     // public static int MAX_CONEXIONES_POR_IP = 8;
-    public static byte MAX_CUENTAS_POR_IP = 8;
-    public static byte MAX_CONEXION_POR_SEGUNDO = 10;
-    private static Calendar DATE_ERROR;
-    private static Calendar DATE_ESTADISTICA;
-    private static PrintStream LOG_ERRORES;
-    private static PrintStream LOG_ESTADISTICAS;
-    private static boolean PARAM_MOSTRAR_EXCEPTIONS;
-    private static int LIMITE_JUGADORES = 100;
-
-    public static void main(final String[] args) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> MainMultiservidor.cerrarServer()));
-        System.out.println("\tATLANTA LOGIN, PARA ZUFOKIA\n\t\tPor Oxakromax");
-        System.out.println("\n\nCargando la configuración");
-        cargarConfiguracion();
-        crearLogEstadisticas();
+    var MAX_CUENTAS_POR_IP: Byte = 8
+    var MAX_CONEXION_POR_SEGUNDO: Byte = 10
+    private var DATE_ERROR: Calendar? = null
+    private var DATE_ESTADISTICA: Calendar? = null
+    private var LOG_ERRORES: PrintStream? = null
+    private var LOG_ESTADISTICAS: PrintStream? = null
+    private var PARAM_MOSTRAR_EXCEPTIONS = false
+    private var LIMITE_JUGADORES = 100
+    @JvmStatic
+    fun main(args: Array<String>) {
+        Runtime.getRuntime().addShutdownHook(Thread(Runnable { cerrarServer() }))
+        println("\tATLANTA LOGIN, PARA ZUFOKIA\n\t\tPor Oxakromax")
+        println("\n\nCargando la configuraciÃ³n")
+        cargarConfiguracion()
+        crearLogEstadisticas()
         if (GestorSQL.iniciarConexion()) {
-            System.out.println("CONEXION OK");
+            println("CONEXION OK")
         } else {
-            escribirLog("CONEXION SQL INVALIDA!!");
-            System.exit(1);
-            return;
+            escribirLog("CONEXION SQL INVALIDA!!")
+            System.exit(1)
+            return
         }
-        Mundo.crearMultiServer();
-        new SincronizadorServer();
-        new LoginServer();
-        new Consola();
-        System.out.println("Esperando que los jugadores se conecten");
+        Mundo.crearMultiServer()
+        SincronizadorServer()
+        LoginServer()
+        Consola()
+        println("Esperando que los jugadores se conecten")
     }
 
-    private static void crearLogErrores() {
+    private fun crearLogErrores() {
         while (true) {
             try {
-                DATE_ERROR = Calendar.getInstance();
-                final String date = DATE_ERROR.get(Calendar.DAY_OF_MONTH) + "-" + (DATE_ERROR.get(Calendar.MONTH) + 1) + "-"
-                        + DATE_ERROR.get(Calendar.YEAR);
-                LOG_ERRORES = new PrintStream(new FileOutputStream("Logs_MultiServidor/Log_" + date + ".txt", true));
-                LOG_ERRORES.println("---------- INICIO DEL MULTISERVIDOR ----------");
-                LOG_ERRORES.flush();
-                System.setErr(LOG_ERRORES);
-                break;
-            } catch (final IOException e) {
-                new File("Logs_MultiServidor").mkdir();
-            } catch (Exception e) {
-                break;
+                DATE_ERROR = Calendar.getInstance()
+                val date = (DATE_ERROR?.get(Calendar.DAY_OF_MONTH).toString() + "-" + (DATE_ERROR?.get(Calendar.MONTH)?.plus(1)) + "-"
+                        + DATE_ERROR?.get(Calendar.YEAR))
+                LOG_ERRORES = PrintStream(FileOutputStream("Logs_MultiServidor/Log_$date.txt", true))
+                LOG_ERRORES!!.println("---------- INICIO DEL MULTISERVIDOR ----------")
+                LOG_ERRORES!!.flush()
+                System.setErr(LOG_ERRORES)
+                break
+            } catch (e: IOException) {
+                File("Logs_MultiServidor").mkdir()
+            } catch (e: Exception) {
+                break
             }
         }
     }
 
-    private static void crearLogEstadisticas() {
+    private fun crearLogEstadisticas() {
         while (true) {
             try {
-                DATE_ESTADISTICA = Calendar.getInstance();
-                final String date = DATE_ESTADISTICA.get(Calendar.DAY_OF_MONTH) + "-"
-                        + (DATE_ESTADISTICA.get(Calendar.MONTH) + 1) + "-" + DATE_ESTADISTICA.get(Calendar.YEAR);
-                LOG_ESTADISTICAS = new PrintStream(new FileOutputStream("Estadisticas_Multiservidor/Conectados_" + date
-                        + ".txt", true));
-                LOG_ESTADISTICAS.flush();
-                break;
-            } catch (final IOException e) {
-                new File("Estadisticas_Multiservidor").mkdir();
-            } catch (Exception e) {
-                break;
+                DATE_ESTADISTICA = Calendar.getInstance()
+                val date = (DATE_ESTADISTICA?.get(Calendar.DAY_OF_MONTH).toString() + "-"
+                        + (DATE_ESTADISTICA?.get(Calendar.MONTH)?.plus(1)) + "-" + DATE_ESTADISTICA?.get(Calendar.YEAR))
+                LOG_ESTADISTICAS = PrintStream(FileOutputStream("Estadisticas_Multiservidor/Conectados_" + date
+                        + ".txt", true))
+                LOG_ESTADISTICAS!!.flush()
+                break
+            } catch (e: IOException) {
+                File("Estadisticas_Multiservidor").mkdir()
+            } catch (e: Exception) {
+                break
             }
         }
     }
 
-    public static void cargarConfiguracion() {
+    fun cargarConfiguracion() {
         try {
-            String ARCHIVO_CONFIG = "config_MultiServidor.txt";
-            final BufferedReader config = new BufferedReader(new FileReader(ARCHIVO_CONFIG));
-            String linea = "";
-            ArrayList<String> comandos = new ArrayList<>();
-            while ((linea = config.readLine()) != null) {
+            val ARCHIVO_CONFIG = "config_MultiServidor.txt"
+            val config = BufferedReader(FileReader(ARCHIVO_CONFIG))
+            var linea = ""
+            val comandos = ArrayList<String>()
+            while (config.readLine().also { linea = it } != null) {
                 try {
-                    final String param = linea.split("=")[0].trim();
-                    final String valor = linea.split("=")[1].trim();
-                    if (comandos.contains(param)) {
-                        System.out.println("En el " + ARCHIVO_CONFIG + " se repite el comando " + param);
-                        System.exit(1);
-                        return;
-                    } else {
-                        comandos.add(param);
+                    if (linea.isEmpty() || linea.contains("#")){
+                        continue
                     }
-                    switch (param.toUpperCase()) {
-                        case "SOUND_WELCOME":
-                        case "MP3_WELCOME":
-                        case "SONIDO_BIENVENIDA":
-                            String idioma = valor.split(" ", 2)[0];
-                            String sonido = valor.split(" ", 2)[1];
-                            String v = TextoAVoz.crearMP3(sonido, idioma);
-                            if (v != null && !v.isEmpty()) {
-                                SONIDO_BIENVENIDA = v;
-                            }
-                            break;
-                        case "DIRECTORIO_LOCAL_MP3":
-                            DIRECTORIO_LOCAL_MP3 = valor;
-                            break;
-                        case "URL_LINK_MP3":
-                            URL_LINK_MP3 = valor;
-                            break;
-                        case "MOSTRAR_ENVIADOS":
-                        case "ENVIADOS":
-                            MOSTRAR_ENVIOS = valor.equalsIgnoreCase("true");
-                            break;
-                        case "SINCRONIZADOS":
-                        case "MOSTRAR_SINCRONIZACION":
-                            MOSTRAR_SINCRONIZACION = valor.equalsIgnoreCase("true");
-                            break;
-                        case "MOSTRAR_RECIBIDOS":
-                        case "RECIBIDOS":
-                            MOSTRAR_RECIBIDOS = valor.equalsIgnoreCase("true");
-                            break;
-                        case "MODO_DEBUG":
-                            MODO_DEBUG = valor.equalsIgnoreCase("true");
-                            break;
-                        case "PARAM_ANTI_DDOS":
-                            PARAM_ANTI_DDOS = valor.equalsIgnoreCase("true");
-                            break;
-                        case "PARAM_MOSTRAR_IP":
-                            PARAM_MOSTRAR_IP = valor.equalsIgnoreCase("true");
-                            break;
-                        case "PARAM_MOSTRAR_EXCEPTIONS":
-                            PARAM_MOSTRAR_EXCEPTIONS = valor.equalsIgnoreCase("true");
-                            break;
-                        case "ACTIVAR_FILA_ESPERA":
-                            ACTIVAR_FILA_ESPERA = valor.equalsIgnoreCase("true");
-                            break;
-                        case "ACCESO_VIP":
-                            ACCESO_VIP = valor.equalsIgnoreCase("true");
-                            break;
-                        case "ENCRIPTAR_IP":
-                            ENCRIPTAR_IP = valor.equalsIgnoreCase("true");
-                            break;
-                        case "VERSION_CLIENTE":
-                            VERSION_CLIENTE = valor;
-                            break;
-                        case "PUERTO_MULTISERVER":
-                        case "PUERTO_MULTISERVIDOR":
-                            PUERTO_MULTISERVIDOR = Integer.parseInt(valor);
-                            break;
-                        case "PUERTO_SINCRONIZACION":
-                        case "PUERTO_SINCRONIZADOR":
-                            PUERTO_SINCRONIZADOR = Integer.parseInt(valor);
-                            break;
-                        case "BD_HOST":
-                            BD_HOST = valor;
-                            break;
-                        case "BD_USER":
-                        case "BD_USUARIO":
-                            BD_USUARIO = valor;
-                            break;
-                        case "BD_PASSWORD":
-                        case "BD_CONTRASEÑA":
-                        case "BD_PASS":
-                            BD_PASS = valor;
-                            break;
-                        case "BD_ACCOUNTS":
-                        case "BD_COMPTES":
-                        case "BD_CUENTAS":
-                        case "BD_LOGIN":
-                        case "BD_REALM":
-                            BD_CUENTAS = valor;
-                            break;
-                        case "MAX_CUENTAS_POR_IP":
-                            MAX_CUENTAS_POR_IP = Byte.parseByte(valor);
-                            break;
-                        // case "MAX_CONEXIONES_POR_IP" :
-                        // MAX_CONEXIONES_POR_IP = Integer.parseInt(valor);
-                        // break;
-                        case "SEGUNDOS_ESPERA":
-                        case "TIEMPO_ESPERA":
-                            SEGUNDOS_ESPERA = Integer.parseInt(valor);
-                            break;
-                        case "SEGUNDOS_TRANSACCION_BD":
-                        case "TIEMPO_TRANSACCION_BD":
-                            SEGUNDOS_TRANSACCION_BD = Integer.parseInt(valor);
-                            break;
-                        case "SEGUNDOS_INFO_STATUS":
-                        case "TIEMPO_INFO_STATUS":
-                            SEGUNDOS_INFO_STATUS = Integer.parseInt(valor);
-                            break;
-                        case "SEGUNDOS_ESTADISTICAS":
-                            SEGUNDOS_ESTADISTICAS = Integer.parseInt(valor);
-                            break;
-                        case "MAX_CONEXION_POR_SEGUNDO":
-                        case "CONEXION_SEGUNDO":
-                            MAX_CONEXION_POR_SEGUNDO = (byte) (Byte.parseByte(valor) - 1);
-                            break;
-                        case "MILISEGUNDOS_SIG_CONEXION":
-                        case "TIEMPO_SIG_CONEXION":
-                            MILISEGUNDOS_SIG_CONEXION = Integer.parseInt(valor);
-                            break;
-                        case "ENABLED_MULTIACCOUNT":
-                        case "PERMITIR_MULTICUENTA":
-                            PERMITIR_MULTICUENTA = valor.equalsIgnoreCase("true");
-                            break;
-                        case "LIMITE_JUGADORES":
-                            LIMITE_JUGADORES = Short.parseShort(valor);
-                            break;
-                        case "CONFIG_SERVERS":
-                            final String[] s = valor.split(";");
-                            for (final String sx : s) {
+                    val param = linea.split("=".toRegex()).toTypedArray()[0].trim { it <= ' ' }
+                    val valor = linea.split("=".toRegex()).toTypedArray()[1].trim { it <= ' ' }
+                    if (comandos.contains(param)) {
+                        println("En el $ARCHIVO_CONFIG se repite el comando $param")
+                        System.exit(1)
+                        return
+                    } else {
+                        comandos.add(param)
+                    }
+                    when (param.toUpperCase()) {
+                        "DIRECTORIO_LOCAL_MP3" -> DIRECTORIO_LOCAL_MP3 = valor
+                        "URL_LINK_MP3" -> URL_LINK_MP3 = valor
+                        "MOSTRAR_ENVIADOS", "ENVIADOS" -> MOSTRAR_ENVIOS = valor.equals("true", ignoreCase = true)
+                        "SINCRONIZADOS", "MOSTRAR_SINCRONIZACION" -> MOSTRAR_SINCRONIZACION = valor.equals("true", ignoreCase = true)
+                        "MOSTRAR_RECIBIDOS", "RECIBIDOS" -> MOSTRAR_RECIBIDOS = valor.equals("true", ignoreCase = true)
+                        "MODO_DEBUG" -> MODO_DEBUG = valor.equals("true", ignoreCase = true)
+                        "PARAM_ANTI_DDOS" -> PARAM_ANTI_DDOS = valor.equals("true", ignoreCase = true)
+                        "PARAM_MOSTRAR_IP" -> PARAM_MOSTRAR_IP = valor.equals("true", ignoreCase = true)
+                        "PARAM_MOSTRAR_EXCEPTIONS" -> PARAM_MOSTRAR_EXCEPTIONS = valor.equals("true", ignoreCase = true)
+                        "ACTIVAR_FILA_ESPERA" -> ACTIVAR_FILA_ESPERA = valor.equals("true", ignoreCase = true)
+                        "ACCESO_VIP" -> ACCESO_VIP = valor.equals("true", ignoreCase = true)
+                        "ENCRIPTAR_IP" -> ENCRIPTAR_IP = valor.equals("true", ignoreCase = true)
+                        "VERSION_CLIENTE" -> VERSION_CLIENTE = valor
+                        "PUERTO_MULTISERVER", "PUERTO_MULTISERVIDOR" -> PUERTO_MULTISERVIDOR = valor.toInt()
+                        "PUERTO_SINCRONIZACION", "PUERTO_SINCRONIZADOR" -> PUERTO_SINCRONIZADOR = valor.toInt()
+                        "BD_HOST" -> BD_HOST = valor
+                        "BD_USER", "BD_USUARIO" -> BD_USUARIO = valor
+                        "BD_PASSWORD", "BD_CONTRASEÃ‘A", "BD_PASS" -> BD_PASS = valor
+                        "BD_ACCOUNTS", "BD_COMPTES", "BD_CUENTAS", "BD_LOGIN", "BD_REALM" -> BD_CUENTAS = valor
+                        "MAX_CUENTAS_POR_IP" -> MAX_CUENTAS_POR_IP = valor.toByte()
+                        "SEGUNDOS_ESPERA", "TIEMPO_ESPERA" -> SEGUNDOS_ESPERA = valor.toInt()
+                        "SEGUNDOS_TRANSACCION_BD", "TIEMPO_TRANSACCION_BD" -> SEGUNDOS_TRANSACCION_BD = valor.toInt()
+                        "SEGUNDOS_INFO_STATUS", "TIEMPO_INFO_STATUS" -> SEGUNDOS_INFO_STATUS = valor.toInt()
+                        "SEGUNDOS_ESTADISTICAS" -> SEGUNDOS_ESTADISTICAS = valor.toInt()
+                        "MAX_CONEXION_POR_SEGUNDO", "CONEXION_SEGUNDO" -> MAX_CONEXION_POR_SEGUNDO = (valor.toByte() - 1).toByte()
+                        "MILISEGUNDOS_SIG_CONEXION", "TIEMPO_SIG_CONEXION" -> MILISEGUNDOS_SIG_CONEXION = valor.toInt()
+                        "ENABLED_MULTIACCOUNT", "PERMITIR_MULTICUENTA" -> PERMITIR_MULTICUENTA = valor.equals("true", ignoreCase = true)
+                        "LIMITE_JUGADORES" -> LIMITE_JUGADORES = valor.toShort().toInt()
+                        "CONFIG_SERVERS" -> {
+                            val s = valor.split(";".toRegex()).toTypedArray()
+                            for (sx in s) {
                                 try {
-                                    final int id = Integer.parseInt(sx.split(",")[0]);
-                                    final int puerto = Integer.parseInt(sx.split(",")[1]);
-                                    Mundo.Servidores.put(id, new Servidor(id, puerto, Servidor.SERVIDOR_OFFLINE));
-                                } catch (final Exception e) {
-                                    System.out.println("ERROR EN CONFIG_SERVER " + e.toString());
+                                    val id = sx.split(",".toRegex()).toTypedArray()[0].toInt()
+                                    val puerto = sx.split(",".toRegex()).toTypedArray()[1].toInt()
+                                    Mundo.Servidores[id] = Servidor(id, puerto, Servidor.SERVIDOR_OFFLINE)
+                                } catch (e: Exception) {
+                                    println("ERROR EN CONFIG_SERVER $e")
                                 }
                             }
-                            break;
+                        }
                     }
-                } catch (Exception ignored) {
+                } catch (ignored: Exception) {
                 }
             }
-            config.close();
-        } catch (final Exception e) {
-            System.out.println(e.toString());
-            System.out.println("Ficha de la configuración no existe o ilegible");
+            config.close()
+        } catch (e: Exception) {
+//            println(e.toString())
+//            println("Ficha de la configuraciÃ³n no existe o ilegible")
         }
     }
 
-    public static void escribirLog(final String str) {
-        System.out.println(str);
+    fun escribirLog(str: String) {
+        println(str)
         try {
-            Calendar temp = Calendar.getInstance();
-            if (temp.get(Calendar.DAY_OF_YEAR) != DATE_ERROR.get(Calendar.DAY_OF_YEAR)) {
-                crearLogErrores();
+            val temp = Calendar.getInstance()
+            if (temp[Calendar.DAY_OF_YEAR] != DATE_ERROR!![Calendar.DAY_OF_YEAR]) {
+                crearLogErrores()
             }
-            final String hora = temp.get(Calendar.HOUR_OF_DAY) + ":" + temp.get(Calendar.MINUTE) + ":"
-                    + temp.get(Calendar.SECOND);
-            LOG_ERRORES.println("[" + hora + "]  " + str);
-            LOG_ERRORES.flush();
-        } catch (final Exception e) {
-            e.printStackTrace();
+            val hora = (temp[Calendar.HOUR_OF_DAY].toString() + ":" + temp[Calendar.MINUTE] + ":"
+                    + temp[Calendar.SECOND])
+            LOG_ERRORES!!.println("[$hora]  $str")
+            LOG_ERRORES!!.flush()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
-    public static void escribirEstadisticas() {
+    fun escribirEstadisticas() {
         try {
-            Calendar temp = Calendar.getInstance();
-            if (temp.get(Calendar.DAY_OF_YEAR) != DATE_ESTADISTICA.get(Calendar.DAY_OF_YEAR)) {
-                crearLogEstadisticas();
+            val temp = Calendar.getInstance()
+            if (temp[Calendar.DAY_OF_YEAR] != DATE_ESTADISTICA!![Calendar.DAY_OF_YEAR]) {
+                crearLogEstadisticas()
             }
-            final String hora = temp.get(Calendar.HOUR_OF_DAY) + ":" + temp.get(Calendar.MINUTE) + ":"
-                    + temp.get(Calendar.SECOND);
-            LOG_ESTADISTICAS.printf("%-8s", hora);
-            for (final Servidor server : Mundo.Servidores.values()) {
-                LOG_ESTADISTICAS.printf("\tSERVIDOR_%-4d(%1d):%3d", server.getID(), server.getEstado(), server.getConectados());
+            val hora = (temp[Calendar.HOUR_OF_DAY].toString() + ":" + temp[Calendar.MINUTE] + ":"
+                    + temp[Calendar.SECOND])
+            LOG_ESTADISTICAS!!.printf("%-8s", hora)
+            for (server in Mundo.Servidores.values) {
+                LOG_ESTADISTICAS!!.printf("\tSERVIDOR_%-4d(%1d):%3d", server!!.id, server.estado, server.conectados)
             }
-            LOG_ESTADISTICAS.println();
-            LOG_ESTADISTICAS.flush();
-        } catch (final Exception e) {
-            e.printStackTrace();
+            LOG_ESTADISTICAS!!.println()
+            LOG_ESTADISTICAS!!.flush()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
-    private static void cerrarServer() {
-        System.out.println("SE ESTA INICIANDO EL CIERRE DEL SERVIDOR ...");
-        GestorSQL.cerrarConexion();
-        System.out.println("EL SERVIDOR SE CERRO EXITOSAMENTE");
+    private fun cerrarServer() {
+        println("SE ESTA INICIANDO EL CIERRE DEL SERVIDOR ...")
+        GestorSQL.cerrarConexion()
+        println("EL SERVIDOR SE CERRO EXITOSAMENTE")
     }
 
-    public static void infoStatus() {
+    fun infoStatus() {
         try {
-            BufferedWriter mod = new BufferedWriter(new FileWriter("info_status.php"));
-            mod.write("<?php " + Mundo.infoStatus());
-            mod.write("  echo 's='.$server_5_status.':o='.$server_5_onlines; ?>");
-            mod.flush();
-            mod.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+            val mod = BufferedWriter(FileWriter("info_status.php"))
+            mod.write("<?php " + Mundo.infoStatus())
+            mod.write("  echo 's='.\$server_5_status.':o='.\$server_5_onlines; ?>")
+            mod.flush()
+            mod.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }

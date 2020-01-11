@@ -1,7 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Encoding" defaultCharsetForPropertiesFiles="ISO-8859-1">
-    <file url="file://$PROJECT_DIR$/src/login/LoginSocket.java" charset="windows-1252" />
+    <file url="file://$PROJECT_DIR$/src/estaticos/Consola.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/estaticos/Encriptador.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/estaticos/GestorSQL.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/estaticos/GestorSalida.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/estaticos/MainMultiservidor.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/estaticos/Mundo.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/estaticos/TextoAVoz.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/login/EnEspera.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/login/LoginServer.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/login/LoginSocket.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/sincronizador/SincronizadorServer.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/sincronizador/SincronizadorSocket.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/variables/Cuenta.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/variables/Servidor.java" charset="UTF-8" />
     <file url="PROJECT" charset="ISO-8859-1" />
   </component>
 </project>

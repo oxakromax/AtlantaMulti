@@ -1,366 +1,356 @@
-package login;
+package login
 
-import estaticos.*;
-import variables.Cuenta;
-import variables.Servidor;
+import estaticos.*
+import login.EnEspera.addEspera
+import login.EnEspera.delEspera
+import login.EnEspera.enEspera
+import login.EnEspera.getIndexOf
+import login.EnEspera.suTurno
+import login.LoginServer.Companion.addCliente
+import login.LoginServer.Companion.addEscogerServer
+import login.LoginServer.Companion.borrarCliente
+import login.LoginServer.Companion.borrarEscogerServer
+import login.LoginServer.Companion.getCantidadIps
+import variables.Cuenta
+import variables.Servidor
+import java.awt.event.ActionEvent
+import java.awt.event.ActionListener
+import java.io.BufferedInputStream
+import java.io.IOException
+import java.io.PrintWriter
+import java.net.Socket
+import java.nio.charset.StandardCharsets
+import java.util.regex.Pattern
+import javax.swing.Timer
 
-import javax.swing.*;
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.util.regex.Pattern;
-
-public class LoginSocket implements Runnable {
-    private BufferedInputStream _in;
-    private PrintWriter _out;
-    private Socket _socket;
-    private String _codigoLlave;
-    private String _IP;
-    private String _nombreCuenta;
-    private String _tipoPacket = "CLIENTE";
-    private byte _intento = 0;
-    private Cuenta _cuenta;
-    private Timer _timer;
-
-    public LoginSocket(final Socket socket) {
-        try {
-            _socket = socket;
-            _IP = _socket.getInetAddress().getHostAddress();
-            _in = new BufferedInputStream((_socket.getInputStream()));
-            _out = new PrintWriter(_socket.getOutputStream());
-            LoginServer.addCliente(this);
-            Thread _thread = new Thread(this);
-            _thread.setDaemon(true);
-            _thread.start();
-        } catch (final IOException e) {
-            desconectar();
-        }
-    }
-
-    public void run() {
+class LoginSocket(socket: Socket?) : Runnable {
+    private var _in: BufferedInputStream? = null
+    var out: PrintWriter? = null
+    private var _socket: Socket? = null
+    private var _codigoLlave: String? = null
+    var actualIP: String? = null
+    private var _nombreCuenta: String? = null
+    private var _tipoPacket = "CLIENTE"
+    private var _intento: Byte = 0
+    var cuenta: Cuenta? = null
+        private set
+    private var _timer: Timer? = null
+    override fun run() {
         try {
             if (MainMultiservidor.SEGUNDOS_ESPERA > 0) {
-                _timer = new Timer(MainMultiservidor.SEGUNDOS_ESPERA * 1000, arg0 -> {
-                    GestorSQL.INSERT_BAN_IP(_IP);
-                    MainMultiservidor.escribirLog("LA IP " + _IP + " ESTA ATACANDO EL MULTISERVIDOR");
-                    desconectar();
-                });
+                _timer = Timer(MainMultiservidor.SEGUNDOS_ESPERA * 1000, ActionListener { arg0: ActionEvent? ->
+                    GestorSQL.INSERT_BAN_IP(actualIP)
+                    MainMultiservidor.escribirLog("LA IP " + actualIP + " ESTA ATACANDO EL MULTISERVIDOR")
+                    desconectar()
+                })
             }
-            GestorSalida.ENVIAR_XML_POLICY_FILE(_out);
-            _codigoLlave = GestorSalida.ENVIAR_HC_CODIGO_LLAVE(_out);
-            int c = -1;
-            int lenght = -1;
-            int index = 0;
-            byte[] bytes = new byte[1];
-            while ((c = _in.read()) != -1) {
+            GestorSalida.ENVIAR_XML_POLICY_FILE(out)
+            _codigoLlave = GestorSalida.ENVIAR_HC_CODIGO_LLAVE(out)
+            var c = -1
+            var lenght = -1
+            var index = 0
+            var bytes = ByteArray(1)
+            while (_in!!.read().also { c = it } != -1) {
                 if (lenght == -1) {
-                    lenght = _in.available();
-                    bytes = new byte[lenght + 1];
-                    index = 0;
+                    lenght = _in!!.available()
+                    bytes = ByteArray(lenght + 1)
+                    index = 0
                 }
-                bytes[index++] = (byte) c;
-                if (bytes.length == index) {
-                    String tempPacket = new String(bytes, StandardCharsets.UTF_8);
-                    for (String packet : tempPacket.split("[\u0000\n\r]")) {
+                bytes[index++] = c.toByte()
+                if (bytes.size == index) {
+                    val tempPacket = String(bytes, StandardCharsets.UTF_8)
+                    for (packet in tempPacket.split("[\u0000\n\r]".toRegex()).toTypedArray()) {
                         if (packet.isEmpty()) {
-                            continue;
+                            continue
                         }
                         if (MainMultiservidor.MOSTRAR_RECIBIDOS) {
-                            System.out.println("<<RECIBIR GENERAL:  " + packet);
+                            println("<<RECIBIR GENERAL:  $packet")
                         }
-                        analizar_Packet_Real(packet);
+                        analizar_Packet_Real(packet)
                     }
-                    lenght = -1;
+                    lenght = -1
                 }
             }
-        } catch (final Exception e) {
-            // e.printStackTrace();
+        } catch (e: Exception) { // e.printStackTrace();
         } finally {
             try {
-                limpiarCuenta();
-                desconectar();
-            } catch (final Exception ignored) {
+                limpiarCuenta()
+                desconectar()
+            } catch (ignored: Exception) {
             }
         }
     }
 
-    public PrintWriter getOut() {
-        return _out;
-    }
-
-    public Cuenta getCuenta() {
-        return _cuenta;
-    }
-
-    private void limpiarCuenta() {
-        if (_cuenta != null) {
-            EnEspera.delEspera(_cuenta);
-            if (_cuenta.getSocket() == this) {
-                _cuenta.setSocket(null);
+    private fun limpiarCuenta() {
+        if (cuenta != null) {
+            delEspera(cuenta)
+            if (cuenta!!.socket === this) {
+                cuenta!!.socket = null
             }
         }
     }
 
-    public String getPacketConexion() {
-        if (_cuenta == null) {
-            return "";
-        }
-        return "A" + _cuenta.getID() + ";" + _IP;
-    }
+    val packetConexion: String
+        get() = if (cuenta == null) {
+            ""
+        } else "A" + cuenta!!.id + ";" + actualIP
 
-    public String getActualIP() {
-        return _IP;
-    }
-
-    private void desconectar() {
+    private fun desconectar() {
         try {
-            LoginServer.borrarEscogerServer(this);
-            LoginServer.borrarCliente(this);
-            if (_socket != null && !_socket.isClosed()) {
-                _socket.close();
+            borrarEscogerServer(this)
+            borrarCliente(this)
+            if (_socket != null && !_socket!!.isClosed()) {
+                _socket!!.close()
             }
-            if (_in != null) {
-                _in.close();
-            }
-            if (_out != null) {
-                _out.close();
-            }
-            pararTimer();
-        } catch (final Exception e1) {
-            e1.printStackTrace();
+            _in?.close()
+            out?.close()
+            pararTimer()
+        } catch (e1: Exception) {
+            e1.printStackTrace()
         }
     }
 
-    public void pararTimer() {
+    fun pararTimer() {
         if (_timer != null) {
             try {
-                _timer.stop();
-            } catch (Exception ignored) {
+                _timer!!.stop()
+            } catch (ignored: Exception) {
             }
         }
     }
 
-    private boolean necesitaCompletarDatos() {
-        return _cuenta.getActualizar() == 3 || GestorSQL.GET_APELLIDO(_nombreCuenta).isEmpty();
+    private fun necesitaCompletarDatos(): Boolean {
+        return cuenta!!.actualizar.toInt() == 3 || GestorSQL.GET_APELLIDO(_nombreCuenta).isEmpty()
     }
 
-    private void analizar_Packet_Real(final String packet) {
+    private fun analizar_Packet_Real(packet: String) {
         try {
-            switch (_tipoPacket) {
-                case "CLIENTE":
-                    if (packet.equalsIgnoreCase("<policy-file-request/>")) {
-                        // GestorSalida.ENVIAR_XML_POLICY_FILE(_out);
-                        return;
+            when (_tipoPacket) {
+                "CLIENTE" -> {
+                    if (packet.equals("<policy-file-request/>", ignoreCase = true)) { // GestorSalida.ENVIAR_XML_POLICY_FILE(_out);
+                        return
                     }
-                    if (packet.length() > 3 && packet.substring(0, 2).equals("##")) {
-                        final String[] param = Encriptador.filtro(packet.substring(3)).split(";");
+                    if (packet.length > 3 && packet.substring(0, 2) == "##") {
+                        val param = Encriptador.filtro(packet.substring(3)).split(";".toRegex()).toTypedArray()
                         if (_intento < 10) {
-                            _intento++;
-                            GestorSalida.ENVIAR_HP_PASS_ENVIADA(_out, GestorSQL.GET_CONTRASEÑA_SI(param[0], param[2], param[1],
-                                    param[3]));
+                            _intento++
+                            GestorSalida.ENVIAR_HP_PASS_ENVIADA(out, GestorSQL.GET_CONTRASEÃ‘A_SI(param[0], param[2], param[1],
+                                    param[3]))
                         } else {
-                            GestorSQL.INSERT_BAN_IP(_IP);
-                            GestorSalida.ENVIAR_AlEb_CUENTA_BANEADA_DEFINITIVO(_out);
-                            desconectar();
-                            return;
+                            GestorSQL.INSERT_BAN_IP(actualIP)
+                            GestorSalida.ENVIAR_AlEb_CUENTA_BANEADA_DEFINITIVO(out)
+                            desconectar()
+                            return
                         }
-                    } else if (packet.length() > 8 && packet.substring(0, 8).equalsIgnoreCase("BUSTOFUS")) {
-                        GestorSalida.ENVIAR_HR_RECUPERAR_CUENTA(_out, GestorSQL.GET_PREGUNTA_SECRETA(Encriptador.filtro(packet
-                                .substring(8))));
-                    } else if (MainMultiservidor.VERSION_CLIENTE.equals("ANY")
-                            || packet.equalsIgnoreCase(MainMultiservidor.VERSION_CLIENTE)) {
-                        // da
-                        _tipoPacket = "CUENTA";
+                    } else if (packet.length > 8 && packet.substring(0, 8).equals("BUSTOFUS", ignoreCase = true)) {
+                        GestorSalida.ENVIAR_HR_RECUPERAR_CUENTA(out, GestorSQL.GET_PREGUNTA_SECRETA(Encriptador.filtro(packet
+                                .substring(8))))
+                    } else if (MainMultiservidor.VERSION_CLIENTE == "ANY" || packet.equals(MainMultiservidor.VERSION_CLIENTE, ignoreCase = true)) { // da
+                        _tipoPacket = "CUENTA"
                     } else {
-                        GestorSalida.ENVIAR_AlEv_ERROR_VERSION_DEL_CLIENTE(_out);
-                        desconectar();
-                        return;
+                        GestorSalida.ENVIAR_AlEv_ERROR_VERSION_DEL_CLIENTE(out)
+                        desconectar()
+                        return
                     }
-                    break;
-                case "CUENTA":// recibe el nombre la cuenta
-                    _nombreCuenta = Encriptador.filtro(packet);
-                    _tipoPacket = "PASSWORD";
-                    break;
-                case "PASSWORD":// verifica si existe la cuenta
-                    if (packet.length() < 3 || !packet.substring(0, 2).equals("#1")) {
-                        GestorSalida.enviar(_out, "ATE");
-                        desconectar();
-                        return;
+                }
+                "CUENTA" -> {
+                    _nombreCuenta = Encriptador.filtro(packet)
+                    _tipoPacket = "PASSWORD"
+                }
+                "PASSWORD" -> {
+                    if (packet.length < 3 || packet.substring(0, 2) != "#1") {
+                        GestorSalida.enviar(out, "ATE")
+                        desconectar()
+                        return
                     }
-                    _cuenta = Mundo.getCuenta(GestorSQL.GET_ID_CUENTA_NOMBRE(_nombreCuenta));
-                    if (_cuenta == null) {
-                        GestorSQL.CARGAR_CUENTA_POR_NOMBRE(_nombreCuenta);// cuenta nueva
-                        Thread.sleep(500);
-                        _cuenta = Mundo.getCuenta(GestorSQL.GET_ID_CUENTA_NOMBRE(_nombreCuenta));
-                        if (_cuenta == null) {
-                            GestorSalida.ENVIAR_AlEp_CUENTA_NO_VALIDA(_out);
-                            desconectar();
-                            return;
+                    cuenta = Mundo.getCuenta(GestorSQL.GET_ID_CUENTA_NOMBRE(_nombreCuenta))
+                    if (cuenta == null) {
+                        GestorSQL.CARGAR_CUENTA_POR_NOMBRE(_nombreCuenta) // cuenta nueva
+                        Thread.sleep(500)
+                        cuenta = Mundo.getCuenta(GestorSQL.GET_ID_CUENTA_NOMBRE(_nombreCuenta))
+                        if (cuenta == null) {
+                            GestorSalida.ENVIAR_AlEp_CUENTA_NO_VALIDA(out)
+                            desconectar()
+                            return
                         }
                     }
-                    String encriptada = Encriptador.encriptarContraseña(_codigoLlave, GestorSQL
-                            .GET_CONTRASEÑA_CUENTA(_nombreCuenta));
-                    if (packet.equals(encriptada)) {
-                        if (GestorSQL.ES_IP_BANEADA(_IP)) {
-                            GestorSalida.ENVIAR_AlEb_CUENTA_BANEADA_DEFINITIVO(_out);
-                            desconectar();
-                            return;
+                    val encriptada = _codigoLlave?.let {
+                        Encriptador.encriptarContraseÃ±a(it, GestorSQL
+                                .GET_CONTRASEÃ‘A_CUENTA(_nombreCuenta))
+                    }
+                    if (packet == encriptada) {
+                        if (GestorSQL.ES_IP_BANEADA(actualIP)) {
+                            GestorSalida.ENVIAR_AlEb_CUENTA_BANEADA_DEFINITIVO(out)
+                            desconectar()
+                            return
                         }
-                        final long tiempoBaneo = GestorSQL.GET_BANEADO(_nombreCuenta);
-                        if (tiempoBaneo != 0) {
+                        val tiempoBaneo = GestorSQL.GET_BANEADO(_nombreCuenta)
+                        if (tiempoBaneo != 0L) {
                             if (tiempoBaneo <= -1) {
-                                GestorSalida.ENVIAR_AlEb_CUENTA_BANEADA_DEFINITIVO(_out);
-                                desconectar();
-                                return;
+                                GestorSalida.ENVIAR_AlEb_CUENTA_BANEADA_DEFINITIVO(out)
+                                desconectar()
+                                return
                             } else if (tiempoBaneo > System.currentTimeMillis()) {
-                                GestorSalida.ENVIAR_AlEk_CUENTA_BANEADA_TIEMPO(_out, tiempoBaneo);
-                                desconectar();
-                                return;
+                                GestorSalida.ENVIAR_AlEk_CUENTA_BANEADA_TIEMPO(out, tiempoBaneo)
+                                desconectar()
+                                return
                             } else {
-                                GestorSQL.SET_BANEADO(_nombreCuenta, 0);
+                                GestorSQL.SET_BANEADO(_nombreCuenta, 0)
                             }
                         }
                         // int conectados = 0;// GestorSQL.GET_CUENTAS_CONECTADAS_TOTAL();
-                        // if (Bustemu.LIMITE_JUGADORES < conectados && _cuenta.getRango() == 0) {
-                        // GestorSalida.ENVIAR_AlEw_MUCHOS_JUG_ONLINE(_out);
-                        // return;
-                        // }
+// if (Bustemu.LIMITE_JUGADORES < conectados && _cuenta.getRango() == 0) {
+// GestorSalida.ENVIAR_AlEw_MUCHOS_JUG_ONLINE(_out);
+// return;
+// }
                         if (MainMultiservidor.ACCESO_VIP) {
-                            if (_cuenta.getTiempoAbono() < 1) {
-                                GestorSalida.ENVIAR_M0_MENSAJE_SVR_MUESTRA_DISCONNECT(_out, "34",
-                                        "Il faut être V.I.P. pour accéder à ce serveur", "");
-                                desconectar();
-                                return;
+                            if (cuenta!!.tiempoAbono < 1) {
+                                GestorSalida.ENVIAR_M0_MENSAJE_SVR_MUESTRA_DISCONNECT(out, "34",
+                                        "Il faut Ãªtre V.I.P. pour accÃ©der Ã  ce serveur", "")
+                                desconectar()
+                                return
                             }
                         }
-                        Mundo.enviarCantidadIps(_IP);
-                        Thread.sleep(100);
-                        final int cuentasPorIP = LoginServer.getCantidadIps(_IP);
+                        actualIP?.let { Mundo.enviarCantidadIps(it) }
+                        Thread.sleep(100)
+                        val cuentasPorIP = getCantidadIps(actualIP!!)
                         if (MainMultiservidor.PERMITIR_MULTICUENTA) {
                             if (cuentasPorIP > MainMultiservidor.MAX_CUENTAS_POR_IP) {
                                 GestorSalida
-                                        .ENVIAR_M0_MENSAJE_SVR_MUESTRA_DISCONNECT(_out, "34", (cuentasPorIP - 1) + ";" + _IP, "");
-                                desconectar();
-                                return;
+                                        .ENVIAR_M0_MENSAJE_SVR_MUESTRA_DISCONNECT(out, "34", (cuentasPorIP - 1).toString() + ";" + actualIP, "")
+                                desconectar()
+                                return
                             }
                         } else if (cuentasPorIP > 1) {
-                            GestorSalida.ENVIAR_M0_MENSAJE_SVR_MUESTRA_DISCONNECT(_out, "34", "1;" + _IP, "");
-                            desconectar();
-                            return;
+                            GestorSalida.ENVIAR_M0_MENSAJE_SVR_MUESTRA_DISCONNECT(out, "34", "1;" + actualIP, "")
+                            desconectar()
+                            return
                         }
-                        if (_cuenta.getSocket() != null && _cuenta.getSocket() != this) {
-                            GestorSalida.ENVIAR_AlEd_DESCONECTAR_CUENTA_CONECTADA(_cuenta.getSocket()._out);
-                            _cuenta.getSocket().desconectar();
+                        if (cuenta!!.socket != null && cuenta!!.socket !== this) {
+                            GestorSalida.ENVIAR_AlEd_DESCONECTAR_CUENTA_CONECTADA(cuenta!!.socket?.out)
+                            cuenta!!.socket?.desconectar()
                         }
-                        _tipoPacket = "DEFAULT";
-                        _cuenta.setSocket(this);
-                        EnEspera.addEspera(_cuenta);
+                        _tipoPacket = "DEFAULT"
+                        cuenta!!.socket = this
+                        addEspera(cuenta!!)
                         if (_timer != null) {
-                            _timer.start();
+                            _timer!!.start()
                         }
                         if (GestorSQL.GET_APODO(_nombreCuenta).isEmpty()) {
-                            String apodo = Encriptador.palabraAleatorio(12);
+                            var apodo = Encriptador.palabraAleatorio(12)
                             while (GestorSQL.GET_APODO_EXISTE(apodo)) {
-                                apodo = Encriptador.palabraAleatorio(12);
+                                apodo = Encriptador.palabraAleatorio(12)
                             }
-                            GestorSQL.UPDATE_APODO(Encriptador.palabraAleatorio(12), _cuenta.getID());
+                            GestorSQL.UPDATE_APODO(Encriptador.palabraAleatorio(12), cuenta!!.id)
                         }
-                        Mundo.enviarPacketsAServidores(this);
-                        GestorSQL.UPDATE_ULTIMA_IP(_IP, _cuenta.getID());
+                        Mundo.enviarPacketsAServidores(this)
+                        GestorSQL.UPDATE_ULTIMA_IP(actualIP, cuenta!!.id)
                         if (!MainMultiservidor.SONIDO_BIENVENIDA.isEmpty()) {
-                            GestorSalida.ENVIAR_Bv_SONAR_MP3(_out, MainMultiservidor.SONIDO_BIENVENIDA);
+                            GestorSalida.ENVIAR_Bv_SONAR_MP3(out, MainMultiservidor.SONIDO_BIENVENIDA)
                         }
                     } else {
-                        GestorSalida.ENVIAR_AlEx_NOMBRE_O_PASS_INCORRECTA(_out);
-                        desconectar();
-                        return;
+                        GestorSalida.ENVIAR_AlEx_NOMBRE_O_PASS_INCORRECTA(out)
+                        desconectar()
+                        return
                     }
-                    break;
-                default:
-                    if (_cuenta == null) {
-                        GestorSalida.ENVIAR_AlEp_CUENTA_NO_VALIDA(_out);
-                        desconectar();
-                    } else if (packet.substring(0, 2).equals("Af")) {
+                }
+                else -> if (cuenta == null) {
+                    GestorSalida.ENVIAR_AlEp_CUENTA_NO_VALIDA(out)
+                    desconectar()
+                } else if (packet.substring(0, 2) == "Af") {
+                    try {
+                        if (_timer != null) {
+                            _timer!!.restart()
+                        }
+                    } catch (ignored: Exception) {
+                    }
+                    if (MainMultiservidor.ACTIVAR_FILA_ESPERA) {
+                        val pendiente = getIndexOf(cuenta)
+                        if (pendiente < MainMultiservidor.MAX_CONEXION_POR_SEGUNDO) {
+                            suTurno(cuenta!!, out)
+                        } else if (pendiente == -1) {
+                            desconectar()
+                        } else {
+                            enEspera(pendiente, out)
+                        }
+                    } else {
+                        suTurno(cuenta!!, out)
+                    }
+                } else if (packet.substring(0, 2) == "Ax") {
+                    pararTimer()
+                    if (cuenta!!.socket != null && cuenta!!.socket !== this) {
+                        GestorSalida.ENVIAR_AlEd_DESCONECTAR_CUENTA_CONECTADA(cuenta!!.socket?.out)
+                        cuenta!!.socket?.desconectar()
+                        cuenta!!.socket = this
+                    }
+                    addEscogerServer(this)
+                    GestorSalida.ENVIAR_AxK_TIEMPO_ABONADO_NRO_PJS(out, cuenta!!)
+                    if (necesitaCompletarDatos()) {
+                        GestorSalida.ENVIAR_HU_ACTUALIZAR_DATOS(out)
+                    }
+                } else if (packet.substring(0, 2) == "AC") { // cambiar password
+                    pararTimer()
+                    if (necesitaCompletarDatos()) {
+                        GestorSalida.ENVIAR_HU_ACTUALIZAR_DATOS(out)
+                    } else {
+                        GestorSalida.ENVIAR_HN_CAMBIAR_PASSWORD(out, GestorSQL.GET_PREGUNTA_SECRETA(_nombreCuenta))
+                    }
+                } else if (packet.substring(0, 2) == "AF") { // confirmar nueva password
+                    pararTimer()
+                    if (necesitaCompletarDatos()) {
+                        GestorSalida.ENVIAR_HU_ACTUALIZAR_DATOS(out)
+                    } else {
                         try {
-                            if (_timer != null) {
-                                _timer.restart();
-                            }
-                        } catch (final Exception ignored) {
-                        }
-                        if (MainMultiservidor.ACTIVAR_FILA_ESPERA) {
-                            final int pendiente = EnEspera.getIndexOf(_cuenta);
-                            if (pendiente < MainMultiservidor.MAX_CONEXION_POR_SEGUNDO) {
-                                EnEspera.suTurno(_cuenta, _out);
-                            } else if (pendiente == -1) {
-                                desconectar();
-                            } else {
-                                EnEspera.enEspera(pendiente, _out);
-                            }
-                        } else {
-                            EnEspera.suTurno(_cuenta, _out);
-                        }
-                    } else if (packet.substring(0, 2).equals("Ax")) {
-                        pararTimer();
-                        if (_cuenta.getSocket() != null && _cuenta.getSocket() != this) {
-                            GestorSalida.ENVIAR_AlEd_DESCONECTAR_CUENTA_CONECTADA(_cuenta.getSocket()._out);
-                            _cuenta.getSocket().desconectar();
-                            _cuenta.setSocket(this);
-                        }
-                        LoginServer.addEscogerServer(this);
-                        GestorSalida.ENVIAR_AxK_TIEMPO_ABONADO_NRO_PJS(_out, _cuenta);
-                        if (necesitaCompletarDatos()) {
-                            GestorSalida.ENVIAR_HU_ACTUALIZAR_DATOS(_out);
-                        }
-                    } else if (packet.substring(0, 2).equals("AC")) {// cambiar password
-                        pararTimer();
-                        if (necesitaCompletarDatos()) {
-                            GestorSalida.ENVIAR_HU_ACTUALIZAR_DATOS(_out);
-                        } else {
-                            GestorSalida.ENVIAR_HN_CAMBIAR_PASSWORD(_out, GestorSQL.GET_PREGUNTA_SECRETA(_nombreCuenta));
-                        }
-                    } else if (packet.substring(0, 2).equals("AF")) {// confirmar nueva password
-                        pararTimer();
-                        if (necesitaCompletarDatos()) {
-                            GestorSalida.ENVIAR_HU_ACTUALIZAR_DATOS(_out);
-                        } else {
-                            try {
-                                final String[] param = Encriptador.filtro(packet.substring(2)).split(Pattern.quote(";"));
-                                String nuevaPass = GestorSQL.CAMBIAR_CONTRASEÑA(_cuenta.getNombre(), param[1], param[2], param[3],
-                                        _cuenta.getID());
-                                GestorSalida.ENVIAR_HF_CONFIRMAR_NUEVA_PASSWORD(_out, nuevaPass);
-                            } catch (final Exception e) {
-                                GestorSalida.ENVIAR_HF_CONFIRMAR_NUEVA_PASSWORD(_out, "");
-                            }
-                        }
-                    } else if (packet.substring(0, 2).equals("AX")) {// escoger server
-                        pararTimer();
-                        if (necesitaCompletarDatos()) {
-                            GestorSalida.ENVIAR_HU_ACTUALIZAR_DATOS(_out);
-                        } else {
-                            LoginServer.borrarEscogerServer(this);
-                            LoginServer.Tiempos.put(_IP, System.currentTimeMillis());
-                            int servidorID = Integer.parseInt(packet.substring(2));
-                            final Servidor servidor = Mundo.Servidores.get(servidorID);
-                            if (servidor == null || servidor.getEstado() == Servidor.SERVIDOR_OFFLINE) {
-                                GestorSalida.ENVIAR_AlEn_CONEXION_NO_TERMINADA(_out);
-                                return;
-                            }
-                            GestorSalida.ENVIAR_AXK_O_AYK_IP_SERVER(_out, _cuenta.getID(), servidor.getIP(), servidor.getPuerto());
-                        }
-                    } else if (packet.substring(0, 2).equals("UP")) {// actualizar datos
-                        pararTimer();
-                        final String[] param = Encriptador.filtro(packet.substring(2)).split(Pattern.quote("|"));
-                        if (GestorSQL.ACTUALIZAR_DATOS(param, _cuenta.getID(), _out)) {
-                            GestorSalida.ENVIAR_HV_CONFIRMADA_ACTUALIZACION_DATOS(_out);
+                            val param = Encriptador.filtro(packet.substring(2)).split(Pattern.quote(";").toRegex()).toTypedArray()
+                            val nuevaPass = GestorSQL.CAMBIAR_CONTRASEÃ‘A(cuenta!!.nombre, param[1], param[2], param[3],
+                                    cuenta!!.id)
+                            GestorSalida.ENVIAR_HF_CONFIRMAR_NUEVA_PASSWORD(out, nuevaPass)
+                        } catch (e: Exception) {
+                            GestorSalida.ENVIAR_HF_CONFIRMAR_NUEVA_PASSWORD(out, "")
                         }
                     }
+                } else if (packet.substring(0, 2) == "AX") { // escoger server
+                    pararTimer()
+                    if (necesitaCompletarDatos()) {
+                        GestorSalida.ENVIAR_HU_ACTUALIZAR_DATOS(out)
+                    } else {
+                        borrarEscogerServer(this)
+                        LoginServer.Tiempos[actualIP!!] = System.currentTimeMillis()
+                        val servidorID = packet.substring(2).toInt()
+                        val servidor = Mundo.Servidores[servidorID]
+                        if (servidor == null || servidor.estado == Servidor.SERVIDOR_OFFLINE) {
+                            GestorSalida.ENVIAR_AlEn_CONEXION_NO_TERMINADA(out)
+                            return
+                        }
+                        GestorSalida.ENVIAR_AXK_O_AYK_IP_SERVER(out, cuenta!!.id, servidor.ip, servidor.puerto)
+                    }
+                } else if (packet.substring(0, 2) == "UP") { // actualizar datos
+                    pararTimer()
+                    val param = Encriptador.filtro(packet.substring(2)).split(Pattern.quote("|").toRegex()).toTypedArray()
+                    if (GestorSQL.ACTUALIZAR_DATOS(param, cuenta!!.id, out)) {
+                        GestorSalida.ENVIAR_HV_CONFIRMADA_ACTUALIZACION_DATOS(out)
+                    }
+                }
             }
-        } catch (final Exception e) {
-            e.printStackTrace();
-            GestorSalida.ENVIAR_AlEp_CUENTA_NO_VALIDA(_out);
-            desconectar();
+        } catch (e: Exception) {
+            e.printStackTrace()
+            GestorSalida.ENVIAR_AlEp_CUENTA_NO_VALIDA(out)
+            desconectar()
+        }
+    }
+
+    init {
+        try {
+            _socket = socket
+            actualIP = _socket!!.inetAddress.hostAddress
+            _in = BufferedInputStream(_socket!!.getInputStream())
+            out = PrintWriter(_socket!!.getOutputStream())
+            addCliente(this)
+            val _thread = Thread(this)
+            _thread.isDaemon = true
+            _thread.start()
+        } catch (e: IOException) {
+            desconectar()
         }
     }
 }

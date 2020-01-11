@@ -1,604 +1,604 @@
-package estaticos;
+package estaticos
 
-import com.mysql.jdbc.PreparedStatement;
-import variables.Cuenta;
-
-import java.io.PrintWriter;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.util.Timer;
-import java.util.TimerTask;
+import com.mysql.jdbc.PreparedStatement
+import variables.Cuenta
+import java.io.PrintWriter
+import java.sql.Connection
+import java.sql.DriverManager
+import java.sql.ResultSet
+import java.util.*
 
 //import java.util.Timer;
 //import java.util.TimerTask;
-
-public class GestorSQL {
-    private static Connection bdCuentas;
-    private static Timer timerComienzo;
-    private static boolean necesitaHacerTransaccion;
-
-    private static void cerrarResultado(final ResultSet resultado) {
+object GestorSQL {
+    private var bdCuentas: Connection? = null
+    private var timerComienzo: Timer? = null
+    private var necesitaHacerTransaccion = false
+    private fun cerrarResultado(resultado: ResultSet) {
         try {
-            resultado.getStatement().close();
-            resultado.close();
-        } catch (final Exception e) {
-            e.printStackTrace();
+            resultado.statement.close()
+            resultado.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
-    private static void cerrarDeclaracion(final PreparedStatement declaracion) {
+    private fun cerrarDeclaracion(declaracion: PreparedStatement) {
         try {
-            declaracion.clearParameters();
-            declaracion.close();
-        } catch (final Exception e) {
-            e.printStackTrace();
+            declaracion.clearParameters()
+            declaracion.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
-    private static ResultSet consultaSQL(final String consultaSQL) throws Exception {
-        final PreparedStatement declaracion = (PreparedStatement) bdCuentas.prepareStatement(consultaSQL);
-        final ResultSet resultado = declaracion.executeQuery();
-        declaracion.setQueryTimeout(300);
-        return resultado;
+    @Throws(Exception::class)
+    private fun consultaSQL(consultaSQL: String): ResultSet {
+        val declaracion = bdCuentas!!.prepareStatement(consultaSQL) as PreparedStatement
+        val resultado = declaracion.executeQuery()
+        declaracion.queryTimeout = 300
+        return resultado
     }
 
-    private static ResultSet consultaSQL(final PreparedStatement declaracion) throws Exception {
-        declaracion.execute();
-        final ResultSet resultado = declaracion.executeQuery();
-        declaracion.setQueryTimeout(300);
-        return resultado;
+    @Throws(Exception::class)
+    private fun consultaSQL(declaracion: PreparedStatement): ResultSet {
+        declaracion.execute()
+        val resultado = declaracion.executeQuery()
+        declaracion.queryTimeout = 300
+        return resultado
     }
 
-    private static PreparedStatement transaccionSQL(final String consultaSQL) throws Exception {
-        final PreparedStatement declaracion = (PreparedStatement) bdCuentas.prepareStatement(consultaSQL);
-        necesitaHacerTransaccion = true;
-        return declaracion;
+    @Throws(Exception::class)
+    private fun transaccionSQL(consultaSQL: String): PreparedStatement {
+        val declaracion = bdCuentas!!.prepareStatement(consultaSQL) as PreparedStatement
+        necesitaHacerTransaccion = true
+        return declaracion
     }
 
-    private static void TIMER(final boolean iniciar) {
+    private fun TIMER(iniciar: Boolean) {
         if (iniciar) {
-            timerComienzo = new Timer();
-            timerComienzo.schedule(new TimerTask() {
-                public void run() {
+            timerComienzo = Timer()
+            timerComienzo!!.schedule(object : TimerTask() {
+                override fun run() {
                     if (!necesitaHacerTransaccion) {
-                        return;
+                        return
                     }
-                    comenzarTransacciones();
-                    necesitaHacerTransaccion = false;
+                    comenzarTransacciones()
+                    necesitaHacerTransaccion = false
                 }
-            }, MainMultiservidor.SEGUNDOS_TRANSACCION_BD * 1000, MainMultiservidor.SEGUNDOS_TRANSACCION_BD * 1000);
+            }, MainMultiservidor.SEGUNDOS_TRANSACCION_BD * 1000.toLong(), MainMultiservidor.SEGUNDOS_TRANSACCION_BD * 1000.toLong())
         } else {
-            timerComienzo.cancel();
+            timerComienzo!!.cancel()
         }
     }
 
-    private static synchronized void comenzarTransacciones() {
+    @Synchronized
+    private fun comenzarTransacciones() {
         try {
-            if (bdCuentas.isClosed()) {
-                cerrarConexion();
-                iniciarConexion();
+            if (bdCuentas!!.isClosed) {
+                cerrarConexion()
+                iniciarConexion()
             }
-            bdCuentas.commit();
-        } catch (final Exception e) {
-            System.out.println("SQL ERROR:" + e.toString());
-            e.printStackTrace();
+            bdCuentas!!.commit()
+        } catch (e: Exception) {
+            println("SQL ERROR:$e")
+            e.printStackTrace()
             // comenzarTransacciones();
         }
     }
 
-    public static synchronized void cerrarConexion() {
+    @Synchronized
+    fun cerrarConexion() {
         try {
             try {
-                bdCuentas.commit();
-            } catch (final Exception ignored) {
+                bdCuentas!!.commit()
+            } catch (ignored: Exception) {
             }
-            bdCuentas.close();
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("Error en la ventana de conexiones SQL:" + e.toString());
-            e.printStackTrace();
+            bdCuentas!!.close()
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("Error en la ventana de conexiones SQL:$e")
+            e.printStackTrace()
         }
     }
 
-    public static boolean iniciarConexion() {
+    fun iniciarConexion(): Boolean {
         try {
-            System.out.print("Conexión a la base de datos: ");
+            print("ConexiÃ³n a la base de datos: ")
             bdCuentas = DriverManager.getConnection("jdbc:mysql://" + MainMultiservidor.BD_HOST + "/"
-                    + MainMultiservidor.BD_CUENTAS + "?autoReconnect=true", MainMultiservidor.BD_USUARIO, MainMultiservidor.BD_PASS);
-            bdCuentas.setAutoCommit(false);
-            if (!bdCuentas.isValid(1000)) {
-                MainMultiservidor.escribirLog("SQLError : Conexion a la BDD invalida");
-                return false;
+                    + MainMultiservidor.BD_CUENTAS + "?autoReconnect=true", MainMultiservidor.BD_USUARIO, MainMultiservidor.BD_PASS)
+            bdCuentas?.setAutoCommit(false)
+            if (!bdCuentas?.isValid(1000)!!) {
+                MainMultiservidor.escribirLog("SQLError : Conexion a la BDD invalida")
+                return false
             }
-            necesitaHacerTransaccion = false;
-            TIMER(true);
-            return true;
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            necesitaHacerTransaccion = false
+            TIMER(true)
+            return true
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return false;
+        return false
     }
 
     // public static void UPDATE_CUENTAS_LOG_CERO() {
-    // String consultaSQL = "UPDATE `cuentas` SET `logeado`= 0;";
-    // try {
-    // final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-    // declaracion.executeUpdate();
-    // cerrarDeclaracion(declaracion);
-    // } catch (final Exception e) {
-    // System.out.println("ERROR SQL: " + e.toString());
-    // MainMultiservidor.escribirLog("LINEA SQL: " + consultaSQL);
-    // e.printStackTrace();
-    // }
-    // }
-    //
-    // public static int GET_CUENTAS_CONECTADAS_IP(final String ip) {
-    // int i = 0;
-    // try {
-    // String consultaSQL = "SELECT * FROM `cuentas` WHERE `ultimaIP` = '" + ip +
-    // "' AND `logeado` = '1' ;";
-    // final ResultSet resultado = consultaSQL(consultaSQL);
-    // while (resultado.next()) {
-    // i++;
-    // }
-    // cerrarResultado(resultado);
-    // } catch (final Exception e) {
-    // MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-    // e.printStackTrace();
-    // }
-    // return i;
-    // }
-
-    public static boolean ACTUALIZAR_DATOS(final String[] infos, final int id, PrintWriter out) {
-        String[] datos = new String[8];
-        for (int s = 0; s < 8; s++) {
+// String consultaSQL = "UPDATE `cuentas` SET `logeado`= 0;";
+// try {
+// final PreparedStatement declaracion = transaccionSQL(consultaSQL);
+// declaracion.executeUpdate();
+// cerrarDeclaracion(declaracion);
+// } catch (final Exception e) {
+// System.out.println("ERROR SQL: " + e.toString());
+// MainMultiservidor.escribirLog("LINEA SQL: " + consultaSQL);
+// e.printStackTrace();
+// }
+// }
+//
+// public static int GET_CUENTAS_CONECTADAS_IP(final String ip) {
+// int i = 0;
+// try {
+// String consultaSQL = "SELECT * FROM `cuentas` WHERE `ultimaIP` = '" + ip +
+// "' AND `logeado` = '1' ;";
+// final ResultSet resultado = consultaSQL(consultaSQL);
+// while (resultado.next()) {
+// i++;
+// }
+// cerrarResultado(resultado);
+// } catch (final Exception e) {
+// MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
+// e.printStackTrace();
+// }
+// return i;
+// }
+    fun ACTUALIZAR_DATOS(infos: Array<String>, id: Int, out: PrintWriter?): Boolean {
+        val datos = arrayOfNulls<String>(8)
+        for (s in 0..7) {
             try {
-                String t = infos[s];
-                if (t.length() > 40) {
-                    t = t.substring(0, 40);
+                var t = infos[s]
+                if (t.length > 40) {
+                    t = t.substring(0, 40)
                 }
                 if (s == 0) {
                     if (!t.contains("@")) {
-                        GestorSalida.ENVIAR_M145_MENSAJE_PANEL_INFORMACION(out, "Email invalido");
-                        return false;
+                        GestorSalida.ENVIAR_M145_MENSAJE_PANEL_INFORMACION(out, "Email invalido")
+                        return false
                     }
                 } else if (t.contains("@")) {
-                    GestorSalida.ENVIAR_M145_MENSAJE_PANEL_INFORMACION(out, "Campos con caracteres invalidos");
-                    return false;
+                    GestorSalida.ENVIAR_M145_MENSAJE_PANEL_INFORMACION(out, "Campos con caracteres invalidos")
+                    return false
                 }
                 if (t.isEmpty()) {
-                    GestorSalida.ENVIAR_M145_MENSAJE_PANEL_INFORMACION(out, "Campos vacios");
-                    return false;
+                    GestorSalida.ENVIAR_M145_MENSAJE_PANEL_INFORMACION(out, "Campos vacios")
+                    return false
                 }
-                datos[s] = t;
-            } catch (Exception e) {
-                return false;
+                datos[s] = t
+            } catch (e: Exception) {
+                return false
             }
         }
-        final String consultaSQL = "UPDATE `cuentas` SET `email`= ?, `apellido`= ?, `nombre`= ?, `cumpleaños`= ?, `pregunta`= ?, `respuesta`= ?, `actualizar`='1' WHERE `id`= ?";
+        val consultaSQL = "UPDATE `cuentas` SET `email`= ?, `apellido`= ?, `nombre`= ?, `cumpleaÃ±os`= ?, `pregunta`= ?, `respuesta`= ?, `actualizar`='1' WHERE `id`= ?"
         try {
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, datos[0]);
-            declaracion.setString(2, datos[1]);
-            declaracion.setString(3, datos[2]);
-            declaracion.setString(4, datos[3] + "~" + datos[4] + "~" + datos[5]);
-            declaracion.setString(5, datos[6]);
-            declaracion.setString(6, datos[7]);
-            declaracion.setInt(7, id);
-            declaracion.executeUpdate();
-            cerrarDeclaracion(declaracion);
-            return true;
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            MainMultiservidor.escribirLog("LINEA SQL: " + consultaSQL);
-            e.printStackTrace();
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, datos[0])
+            declaracion.setString(2, datos[1])
+            declaracion.setString(3, datos[2])
+            declaracion.setString(4, datos[3].toString() + "~" + datos[4] + "~" + datos[5])
+            declaracion.setString(5, datos[6])
+            declaracion.setString(6, datos[7])
+            declaracion.setInt(7, id)
+            declaracion.executeUpdate()
+            cerrarDeclaracion(declaracion)
+            return true
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            MainMultiservidor.escribirLog("LINEA SQL: $consultaSQL")
+            e.printStackTrace()
         }
-        return false;
+        return false
     }
 
-    public static long GET_BANEADO(final String cuenta) {
-        long i = 0;
+    fun GET_BANEADO(cuenta: String?): Long {
+        var i: Long = 0
         try {
-            final String consultaSQL = "SELECT `baneado` FROM `cuentas` WHERE `cuenta` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, cuenta);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT `baneado` FROM `cuentas` WHERE `cuenta` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, cuenta)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
-                i = resultado.getLong("baneado");
+                i = resultado.getLong("baneado")
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return i;
+        return i
     }
 
-    public static String GET_IDIOMA(final String cuenta) {
-        String str = "";
+    fun GET_IDIOMA(cuenta: String?): String {
+        var str = ""
         try {
-            String consultaSQL = "SELECT `idioma` FROM `cuentas` WHERE `cuenta` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, cuenta);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT `idioma` FROM `cuentas` WHERE `cuenta` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, cuenta)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
-                str = resultado.getString("idioma");
+                str = resultado.getString("idioma")
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return str;
+        return str
     }
 
-    public static void SET_BANEADO(final String cuenta, final long baneado) {
-        String consultaSQL = "UPDATE `cuentas` SET `baneado` = ? WHERE `cuenta` = ? ;";
+    fun SET_BANEADO(cuenta: String?, baneado: Long) {
+        val consultaSQL = "UPDATE `cuentas` SET `baneado` = ? WHERE `cuenta` = ? ;"
         try {
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setLong(1, baneado);
-            declaracion.setString(2, cuenta);
-            declaracion.executeUpdate();
-            cerrarDeclaracion(declaracion);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            MainMultiservidor.escribirLog("LINEA SQL: " + consultaSQL);
-            e.printStackTrace();
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setLong(1, baneado)
+            declaracion.setString(2, cuenta)
+            declaracion.executeUpdate()
+            cerrarDeclaracion(declaracion)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            MainMultiservidor.escribirLog("LINEA SQL: $consultaSQL")
+            e.printStackTrace()
         }
     }
 
-    public static byte GET_ACTUALIZAR(final String cuenta) {
-        byte i = 0;
+    fun GET_ACTUALIZAR(cuenta: String?): Byte {
+        var i: Byte = 0
         try {
-            final String consultaSQL = "SELECT `actualizar` FROM `cuentas` WHERE `cuenta` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, cuenta);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT `actualizar` FROM `cuentas` WHERE `cuenta` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, cuenta)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
-                i = resultado.getByte("actualizar");
+                i = resultado.getByte("actualizar")
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return i;
+        return i
     }
 
-    public static byte GET_RANGO(final String cuenta) {
-        byte i = 0;
+    fun GET_RANGO(cuenta: String?): Byte {
+        var i: Byte = 0
         try {
-            String consultaSQL = "SELECT `rango` FROM `cuentas` WHERE `cuenta` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, cuenta);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT `rango` FROM `cuentas` WHERE `cuenta` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, cuenta)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
-                i = resultado.getByte("rango");
+                i = resultado.getByte("rango")
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return i;
+        return i
     }
 
-    public static String GET_ULTIMA_IP(final String cuenta) {
-        String str = "";
+    fun GET_ULTIMA_IP(cuenta: String?): String {
+        var str = ""
         try {
-            String consultaSQL = "SELECT `ultimaIP` FROM `cuentas` WHERE `cuenta` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, cuenta);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT `ultimaIP` FROM `cuentas` WHERE `cuenta` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, cuenta)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
-                str = resultado.getString("ultimaIP");
+                str = resultado.getString("ultimaIP")
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return str;
+        return str
     }
 
-    public static String GET_PREGUNTA_SECRETA(final String cuenta) {
-        String str = "";
+    fun GET_PREGUNTA_SECRETA(cuenta: String?): String {
+        var str = ""
         try {
-            String consultaSQL = "SELECT `pregunta` FROM `cuentas` WHERE `cuenta` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, cuenta);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT `pregunta` FROM `cuentas` WHERE `cuenta` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, cuenta)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
-                str = resultado.getString("pregunta");
+                str = resultado.getString("pregunta")
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return str;
+        return str
     }
 
-    public static String GET_RESPUESTA_SECRETA(final String cuenta) {
-        String str = "";
+    fun GET_RESPUESTA_SECRETA(cuenta: String?): String {
+        var str = ""
         try {
-            String consultaSQL = "SELECT `respuesta` FROM `cuentas` WHERE `cuenta` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, cuenta);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT `respuesta` FROM `cuentas` WHERE `cuenta` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, cuenta)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
-                str = resultado.getString("respuesta");
+                str = resultado.getString("respuesta")
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return str;
+        return str
     }
 
-    public static String GET_APODO(final String cuenta) {
-        String str = "";
+    fun GET_APODO(cuenta: String?): String {
+        var str = ""
         try {
-            String consultaSQL = "SELECT `apodo` FROM `cuentas` WHERE `cuenta` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, cuenta);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT `apodo` FROM `cuentas` WHERE `cuenta` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, cuenta)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
-                str = resultado.getString("apodo");
+                str = resultado.getString("apodo")
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return str;
+        return str
     }
 
-    public static String GET_APELLIDO(final String cuenta) {
-        String str = "";
+    fun GET_APELLIDO(cuenta: String?): String {
+        var str = ""
         try {
-            String consultaSQL = "SELECT `apellido` FROM `cuentas` WHERE `cuenta` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, cuenta);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT `apellido` FROM `cuentas` WHERE `cuenta` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, cuenta)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
-                str = resultado.getString("apellido");
+                str = resultado.getString("apellido")
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return str;
+        return str
     }
 
-    public static boolean GET_APODO_EXISTE(final String apodo) {
-        boolean str = false;
+    fun GET_APODO_EXISTE(apodo: String?): Boolean {
+        var str = false
         try {
-            String consultaSQL = "SELECT * FROM `cuentas` WHERE `apodo` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, apodo);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT * FROM `cuentas` WHERE `apodo` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, apodo)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
-                str = true;
+                str = true
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return str;
+        return str
     }
 
-    public static long GET_ABONO(final String cuenta) {
-        long l = 0;
+    fun GET_ABONO(cuenta: String?): Long {
+        var l: Long = 0
         try {
-            String consultaSQL = "SELECT `abono` FROM `cuentas` WHERE `cuenta` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, cuenta);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT `abono` FROM `cuentas` WHERE `cuenta` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, cuenta)
+            val resultado = consultaSQL(declaracion)
             while (resultado.next()) {
-                l = resultado.getLong("abono");
+                l = resultado.getLong("abono")
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return l;
+        return l
     }
 
-    public static int GET_ID_CUENTA_NOMBRE(final String cuenta) {
-        int i = 0;
+    fun GET_ID_CUENTA_NOMBRE(cuenta: String?): Int {
+        var i = 0
         try {
-            String consultaSQL = "SELECT `id` FROM `cuentas` WHERE `cuenta` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, cuenta);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT `id` FROM `cuentas` WHERE `cuenta` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, cuenta)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
-                i = resultado.getInt("id");
+                i = resultado.getInt("id")
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return i;
+        return i
     }
 
-    public static String GET_CONTRASEÑA_CUENTA(final String cuenta) {
-        String str = "";
+    fun GET_CONTRASEÃ‘A_CUENTA(cuenta: String?): String {
+        var str = ""
         try {
-			String consultaSQL = "SELECT `contraseña` FROM `cuentas` WHERE `cuenta` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, cuenta);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT `contraseÃ±a` FROM `cuentas` WHERE `cuenta` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, cuenta)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
-				str = resultado.getString("contraseña");
+                str = resultado.getString("contraseÃ±a")
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return str;
+        return str
     }
 
-    public static String GET_CONTRASEÑA_SI(final String cuenta, final String respuesta, final String email,
-                                           final String cumpleaños) {
-        String str = "";
+    fun GET_CONTRASEÃ‘A_SI(cuenta: String?, respuesta: String?, email: String?,
+                          cumpleaÃ±os: String?): String {
+        var str = ""
         try {
-			final String consultaSQL = "SELECT `contraseña` FROM `cuentas` WHERE `cuenta` = ? AND `respuestas` = ? AND `email` = ? AND `cumpleaños` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, cuenta);
-            declaracion.setString(2, respuesta);
-            declaracion.setString(3, email);
-            declaracion.setString(4, cumpleaños);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT `contraseÃ±a` FROM `cuentas` WHERE `cuenta` = ? AND `respuestas` = ? AND `email` = ? AND `cumpleaÃ±os` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, cuenta)
+            declaracion.setString(2, respuesta)
+            declaracion.setString(3, email)
+            declaracion.setString(4, cumpleaÃ±os)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
-				str = resultado.getString("contraseña");
+                str = resultado.getString("contraseÃ±a")
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return str;
+        return str
     }
 
-    public static String CAMBIAR_CONTRASEÑA(final String cuenta, final String email, final String respuesta,
-                                            final String nuevaPass, final int id) {
-        String str = "";
+    fun CAMBIAR_CONTRASEÃ‘A(cuenta: String?, email: String?, respuesta: String?,
+                           nuevaPass: String, id: Int): String {
+        var str = ""
         try {
-			final String consultaSQL = "SELECT `contraseña` FROM `cuentas` WHERE `cuenta` = ? AND `respuesta` = ? AND `email` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, cuenta);
-            declaracion.setString(2, respuesta);
-            declaracion.setString(3, email);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT `contraseÃ±a` FROM `cuentas` WHERE `cuenta` = ? AND `respuesta` = ? AND `email` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, cuenta)
+            declaracion.setString(2, respuesta)
+            declaracion.setString(3, email)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
                 try {
-                    CAMBIAR_CONTRASEÑA_CUENTA(nuevaPass, id);
-                    str = nuevaPass;
-                } catch (final Exception e) {
-                    e.printStackTrace();
+                    CAMBIAR_CONTRASEÃ‘A_CUENTA(nuevaPass, id)
+                    str = nuevaPass
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return str;
+        return str
     }
 
-    private static void CAMBIAR_CONTRASEÑA_CUENTA(final String contraseña, final int cuentaID) {
-		final String consultaSQL = "UPDATE `cuentas` SET `contraseña`= ? WHERE `id`= ? ;";
+    private fun CAMBIAR_CONTRASEÃ‘A_CUENTA(contraseÃ±a: String, cuentaID: Int) {
+        val consultaSQL = "UPDATE `cuentas` SET `contraseÃ±a`= ? WHERE `id`= ? ;"
         try {
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, contraseña);
-            declaracion.setInt(2, cuentaID);
-            declaracion.executeUpdate();
-            cerrarDeclaracion(declaracion);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            MainMultiservidor.escribirLog("LINEA SQL: " + consultaSQL);
-        }
-    }
-
-    public static void UPDATE_ULTIMA_IP(final String ultimaIP, final int cuentaID) {
-        String consultaSQL = "UPDATE `cuentas` SET `ultimaIP`= ? WHERE `id`= ? ;";
-        try {
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, ultimaIP);
-            declaracion.setInt(2, cuentaID);
-            declaracion.executeUpdate();
-            cerrarDeclaracion(declaracion);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            MainMultiservidor.escribirLog("LINEA SQL: " + consultaSQL);
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, contraseÃ±a)
+            declaracion.setInt(2, cuentaID)
+            declaracion.executeUpdate()
+            cerrarDeclaracion(declaracion)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            MainMultiservidor.escribirLog("LINEA SQL: $consultaSQL")
         }
     }
 
-    public static void UPDATE_APODO(final String apodo, final int cuentaID) {
-        String consultaSQL = "UPDATE `cuentas` SET `apodo`= ? WHERE `id`= ? ;";
+    fun UPDATE_ULTIMA_IP(ultimaIP: String?, cuentaID: Int) {
+        val consultaSQL = "UPDATE `cuentas` SET `ultimaIP`= ? WHERE `id`= ? ;"
         try {
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, apodo);
-            declaracion.setInt(2, cuentaID);
-            declaracion.executeUpdate();
-            cerrarDeclaracion(declaracion);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            MainMultiservidor.escribirLog("LINEA SQL: " + consultaSQL);
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, ultimaIP)
+            declaracion.setInt(2, cuentaID)
+            declaracion.executeUpdate()
+            cerrarDeclaracion(declaracion)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            MainMultiservidor.escribirLog("LINEA SQL: $consultaSQL")
         }
     }
 
-    public static void INSERT_BAN_IP(final String ip) {
-        final String consultaSQL = "INSERT INTO `banip` (ip) VALUES (?);";
+    fun UPDATE_APODO(apodo: String?, cuentaID: Int) {
+        val consultaSQL = "UPDATE `cuentas` SET `apodo`= ? WHERE `id`= ? ;"
         try {
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, ip);
-            declaracion.executeUpdate();
-            cerrarDeclaracion(declaracion);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            MainMultiservidor.escribirLog("LINEA SQL: " + consultaSQL);
-            e.printStackTrace();
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, apodo)
+            declaracion.setInt(2, cuentaID)
+            declaracion.executeUpdate()
+            cerrarDeclaracion(declaracion)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            MainMultiservidor.escribirLog("LINEA SQL: $consultaSQL")
         }
     }
 
-    public static boolean ES_IP_BANEADA(final String ip) {
-        boolean b = false;
+    fun INSERT_BAN_IP(ip: String?) {
+        val consultaSQL = "INSERT INTO `banip` (ip) VALUES (?);"
         try {
-            final String consultaSQL = "SELECT `ip` FROM `banip` WHERE `ip` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, ip);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, ip)
+            declaracion.executeUpdate()
+            cerrarDeclaracion(declaracion)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            MainMultiservidor.escribirLog("LINEA SQL: $consultaSQL")
+            e.printStackTrace()
+        }
+    }
+
+    fun ES_IP_BANEADA(ip: String?): Boolean {
+        var b = false
+        try {
+            val consultaSQL = "SELECT `ip` FROM `banip` WHERE `ip` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, ip)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
-                b = true;
+                b = true
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
-        return b;
+        return b
     }
 
-    public static void CARGAR_CUENTAS() {
+    fun CARGAR_CUENTAS() {
         try {
-            String consultaSQL = "SELECT * from cuentas ;";
-            final ResultSet resultado = consultaSQL(consultaSQL);
+            val consultaSQL = "SELECT * from cuentas ;"
+            val resultado = consultaSQL(consultaSQL)
             while (resultado.next()) {
-                Cuenta cuenta = new Cuenta(resultado.getInt("id"), resultado.getString("cuenta").toLowerCase(), resultado
-                        .getString("apodo"));
-                Mundo.addCuenta(cuenta);
+                val cuenta = Cuenta(resultado.getInt("id"), resultado.getString("cuenta").toLowerCase(), resultado
+                        .getString("apodo"))
+                Mundo.addCuenta(cuenta)
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
     }
 
-    public static void CARGAR_CUENTA_POR_NOMBRE(final String cuenta) {
+    fun CARGAR_CUENTA_POR_NOMBRE(cuenta: String?) {
         try {
-            String consultaSQL = "SELECT * from cuentas WHERE `cuenta` = ? ;";
-            final PreparedStatement declaracion = transaccionSQL(consultaSQL);
-            declaracion.setString(1, cuenta);
-            final ResultSet resultado = consultaSQL(declaracion);
+            val consultaSQL = "SELECT * from cuentas WHERE `cuenta` = ? ;"
+            val declaracion = transaccionSQL(consultaSQL)
+            declaracion.setString(1, cuenta)
+            val resultado = consultaSQL(declaracion)
             if (resultado.first()) {
-                Cuenta cc = new Cuenta(resultado.getInt("id"), resultado.getString("cuenta").toLowerCase(), resultado
-                        .getString("apodo"));
-                Mundo.addCuenta(cc);
+                val cc = Cuenta(resultado.getInt("id"), resultado.getString("cuenta").toLowerCase(), resultado
+                        .getString("apodo"))
+                Mundo.addCuenta(cc)
             }
-            cerrarResultado(resultado);
-        } catch (final Exception e) {
-            MainMultiservidor.escribirLog("ERROR SQL: " + e.toString());
-            e.printStackTrace();
+            cerrarResultado(resultado)
+        } catch (e: Exception) {
+            MainMultiservidor.escribirLog("ERROR SQL: $e")
+            e.printStackTrace()
         }
     }
 }

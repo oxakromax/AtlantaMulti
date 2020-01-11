@@ -1,42 +1,45 @@
-package login;
+package login
 
-import estaticos.GestorSalida;
-import variables.Cuenta;
+import estaticos.GestorSalida
+import variables.Cuenta
+import java.io.PrintWriter
+import java.util.*
 
-import java.io.PrintWriter;
-import java.util.ArrayList;
-
-class EnEspera {
-    private static final ArrayList<Cuenta> _cuentas = new ArrayList<>();
-
-    public static void enEspera(final int pendiente, final PrintWriter out) {
+internal object EnEspera {
+    private val _cuentas = ArrayList<Cuenta>()
+    @JvmStatic
+    fun enEspera(pendiente: Int, out: PrintWriter?) {
         try {
-            GestorSalida.ENVIAR_Af_NUEVA_COLA(out, pendiente + 1, 0, 0, "", -1);
-        } catch (final Exception e) {
-            GestorSalida.ENVIAR_AlEd_DESCONECTAR_CUENTA_CONECTADA(out);
+            GestorSalida.ENVIAR_Af_NUEVA_COLA(out, pendiente + 1, 0, 0, "", -1)
+        } catch (e: Exception) {
+            GestorSalida.ENVIAR_AlEd_DESCONECTAR_CUENTA_CONECTADA(out)
         }
     }
 
-    public static int getIndexOf(final Cuenta cuenta) {
-        return _cuentas.indexOf(cuenta);
+    @JvmStatic
+    fun getIndexOf(cuenta: Cuenta?): Int {
+        return _cuentas.indexOf(cuenta)
     }
 
-    public static void addEspera(final Cuenta cuenta) {
+    @JvmStatic
+    fun addEspera(cuenta: Cuenta) {
         if (!_cuentas.contains(cuenta)) {
-            _cuentas.add(cuenta);
+            _cuentas.add(cuenta)
         }
     }
 
-    public static void delEspera(final Cuenta cuenta) {
+    @JvmStatic
+    fun delEspera(cuenta: Cuenta?) {
         if (cuenta != null) {
-            cuenta.pararTimer();
-            _cuentas.remove(cuenta);
+            cuenta.pararTimer()
+            _cuentas.remove(cuenta)
         }
     }
 
-    public static void suTurno(final Cuenta cuenta, final PrintWriter _out) {
-        delEspera(cuenta);
-        GestorSalida.ENVIAR_Ad_Ac_AH_AlK_AQ_INFO_CUENTA_Y_SERVER(_out, cuenta.getApodo(), cuenta.getRango() > 0 ? 1 : 0,
-                cuenta.getPregunta());
+    @JvmStatic
+    fun suTurno(cuenta: Cuenta, _out: PrintWriter?) {
+        delEspera(cuenta)
+        GestorSalida.ENVIAR_Ad_Ac_AH_AlK_AQ_INFO_CUENTA_Y_SERVER(_out, cuenta.apodo, if (cuenta.rango > 0) 1 else 0,
+                cuenta.pregunta)
     }
 }

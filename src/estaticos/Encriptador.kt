@@ -1,173 +1,186 @@
-package estaticos;
+package estaticos
 
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.StandardCharsets
 
-public class Encriptador {
-    public static final String NUMEROS = "0123456789";
-    private static final char[] HASH = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',
+object Encriptador {
+    const val NUMEROS = "0123456789"
+    private val HASH = charArrayOf('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',
             'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
             'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-',
-            '_'};// q = 16, N = 40, - = 63
-    private static final String ABC_MIN = "abcdefghijklmnopqrstuvwxyz";
-    private static final String ABC_MAY = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private static final String VOCALES = "aeiouAEIOU";
-    private static final String CONSONANTES = "bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ";
-    private static final String GUIONES = "_-";
-
-    public static String palabraAleatorio(final int limite) {
-        final StringBuilder nombre = new StringBuilder();
-        int i = (int) Math.floor(Math.random() * ABC_MAY.length());
-        char temp = ABC_MAY.charAt(i);
-        nombre.append(temp);
-        char xxx;
-        while (nombre.length() < limite) {
-            i = (int) Math.floor(Math.random() * ABC_MIN.length());
-            xxx = ABC_MIN.charAt(i);
-            if (temp == xxx || (VOCALES.contains(temp + "") && VOCALES.contains(xxx + ""))
-                    || (CONSONANTES.contains(temp + "") && CONSONANTES.contains(xxx + ""))) {
-                continue;
+            '_') // q = 16, N = 40, - = 63
+    private const val ABC_MIN = "abcdefghijklmnopqrstuvwxyz"
+    private const val ABC_MAY = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    private const val VOCALES = "aeiouAEIOU"
+    private const val CONSONANTES = "bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ"
+    private const val GUIONES = "_-"
+    fun palabraAleatorio(limite: Int): String {
+        val nombre = StringBuilder()
+        var i = Math.floor(Math.random() * ABC_MAY.length).toInt()
+        var temp = ABC_MAY[i]
+        nombre.append(temp)
+        var xxx: Char
+        while (nombre.length < limite) {
+            i = Math.floor(Math.random() * ABC_MIN.length).toInt()
+            xxx = ABC_MIN[i]
+            if (temp == xxx || VOCALES.contains(temp.toString() + "") && VOCALES.contains(xxx.toString() + "")
+                    || CONSONANTES.contains(temp.toString() + "") && CONSONANTES.contains(xxx.toString() + "")) {
+                continue
             }
-            temp = xxx;
-            nombre.append(xxx);
+            temp = xxx
+            nombre.append(xxx)
         }
-        return nombre.toString();
+        return nombre.toString()
     }
 
-    public static String filtro(final String s) {
-        final StringBuilder filtrado = new StringBuilder();
-        final char[] filtros = {'\'', '\"', '\\', '=', '#', '/', '!', '`', '+', '$', '%'};
-        for (final char x : s.toCharArray()) {
-            boolean paso = true;
-            for (final char f : filtros) {
+    fun filtro(s: String): String {
+        val filtrado = StringBuilder()
+        val filtros = charArrayOf('\'', '\"', '\\', '=', '#', '/', '!', '`', '+', '$', '%')
+        for (x in s.toCharArray()) {
+            var paso = true
+            for (f in filtros) {
                 if (x == f) {
-                    paso = false;
-                    break;
+                    paso = false
+                    break
                 }
             }
             if (!paso) {
-                continue;
+                continue
             }
-            filtrado.append(x + "");
+            filtrado.append(x.toString() + "")
         }
-        return filtrado.toString();
+        return filtrado.toString()
     }
 
-    public static String encriptarContraseña(final String key, final String contraseña) {
-        StringBuilder encriptado = new StringBuilder("#1");
-        for (int i = 0; i < contraseña.length(); i++) {
-            final char charPass = contraseña.charAt(i);
-            final char charKey = key.charAt(i);
-            final int a = charPass / 16;
-            final int b = charPass % 16;
-            final int a1 = (a + charKey) % HASH.length;
-            final int b1 = (b + charKey) % HASH.length;
-            encriptado.append(HASH[a1]);
-            encriptado.append(HASH[b1]);
+    fun encriptarContraseÃ±a(key: String, contraseÃ±a: String): String {
+        val encriptado = StringBuilder("#1")
+        for (i in 0 until contraseÃ±a.length) {
+            val charPass = contraseÃ±a[i]
+            val charKey = key[i]
+            val a = charPass.toInt() / 16
+            val b = charPass.toInt() % 16
+            val a1 = (a + charKey.toInt()) % HASH.size
+            val b1 = (b + charKey.toInt()) % HASH.size
+            encriptado.append(HASH[a1])
+            encriptado.append(HASH[b1])
         }
-        return encriptado.toString();
+        return encriptado.toString()
     }
 
-    public static String desencriptarContraseña(final String contraseña, final String key) {
-        int l1, l2, l3, l4, l5;
-        String l7 = "";
-        final String abecedario = ABC_MIN + ABC_MAY + GUIONES;
-        for (l1 = 0; l1 <= contraseña.length() - 1; l1 += 2) {
-            l3 = key.charAt(l1 / 2);
-            l2 = abecedario.indexOf(contraseña.charAt(l1));
-            l4 = 64 + l2 - l3;
-            final int l11 = l1 + 1;
-            l2 = abecedario.indexOf(contraseña.charAt(l11));
-            l5 = 64 + l2 - l3;
+    fun desencriptarContraseÃ±a(contraseÃ±a: String, key: String): String {
+        var l1: Int
+        var l2: Int
+        var l3: Int
+        var l4: Int
+        var l5: Int
+        var l7 = ""
+        val abecedario = ABC_MIN + ABC_MAY + GUIONES
+        l1 = 0
+        while (l1 <= contraseÃ±a.length - 1) {
+            l3 = key[l1 / 2].toInt()
+            l2 = abecedario.indexOf(contraseÃ±a[l1])
+            l4 = 64 + l2 - l3
+            val l11 = l1 + 1
+            l2 = abecedario.indexOf(contraseÃ±a[l11])
+            l5 = 64 + l2 - l3
             if (l5 < 0) {
-                l5 = 64 + l5;
+                l5 = 64 + l5
             }
-            l7 = l7 + (char) (16 * l4 + l5);
+            l7 = l7 + (16 * l4 + l5).toChar()
+            l1 += 2
         }
-        return l7;
+        return l7
     }
 
-    public static String encriptarIP(final String IP) {
-        final String[] split = IP.split("\\.");
-        final StringBuilder encriptado = new StringBuilder();
-        int cantidad = 0;
-        for (int i = 0; i < 50; i++) {
-            for (int o = 0; o < 50; o++) {
-                if (((i & 15) << 4 | o & 15) == Integer.parseInt(split[cantidad])) {
-                    final char A = (char) (i + 48);
-                    final char B = (char) (o + 48);
-                    encriptado.append(Character.toString(A) + B);
-                    i = 0;
-                    o = 0;
-                    cantidad++;
+    fun encriptarIP(IP: String): String {
+        val split = IP.split("\\.".toRegex()).toTypedArray()
+        val encriptado = StringBuilder()
+        var cantidad = 0
+        var i = 0
+        while (i < 50) {
+            var o = 0
+            while (o < 50) {
+                if (i and 15 shl 4 or o and 15 == split[cantidad].toInt()) {
+                    val A = (i + 48).toChar()
+                    val B = (o + 48).toChar()
+                    encriptado.append(Character.toString(A) + B)
+                    i = 0
+                    o = 0
+                    cantidad++
                     if (cantidad == 4) {
-                        return encriptado.toString();
+                        return encriptado.toString()
                     }
                 }
+                o++
             }
+            i++
         }
-        return "DD";
+        return "DD"
     }
 
-    public static String encriptarPuerto(final int puerto) {
-        int P = puerto;
-        final StringBuilder numero = new StringBuilder();
-        for (int a = 2; a >= 0; a--) {
-            numero.append(HASH[(int) (P / Math.pow(64, a))]);
-            P = P % (int) Math.pow(64, a);
+    fun encriptarPuerto(puerto: Int): String {
+        var P = puerto
+        val numero = StringBuilder()
+        for (a in 2 downTo 0) {
+            numero.append(HASH[(P / Math.pow(64.0, a.toDouble())).toInt()])
+            P = P % Math.pow(64.0, a.toDouble()).toInt()
         }
-        return numero.toString();
+        return numero.toString()
     }
 
-    public static String celdaIDACodigo(final int celdaID) {
-        final int char1 = celdaID / 64, char2 = celdaID % 64;
-        return HASH[char1] + "" + HASH[char2];
+    fun celdaIDACodigo(celdaID: Int): String {
+        val char1 = celdaID / 64
+        val char2 = celdaID % 64
+        return HASH[char1].toString() + "" + HASH[char2]
     }
 
-    public static short celdaCodigoAID(final String celdaCodigo) {
-        final char char1 = celdaCodigo.charAt(0), char2 = celdaCodigo.charAt(1);
-        short code1 = 0, code2 = 0, a = 0;
-        while (a < HASH.length) {
-            if (HASH[a] == char1) {
-                code1 = (short) (a * 64);
+    fun celdaCodigoAID(celdaCodigo: String): Short {
+        val char1 = celdaCodigo[0]
+        val char2 = celdaCodigo[1]
+        var code1: Short = 0
+        var code2: Short = 0
+        var a: Short = 0
+        while (a < HASH.size) {
+            if (HASH[a.toInt()] == char1) {
+                code1 = (a * 64).toShort()
             }
-            if (HASH[a] == char2) {
-                code2 = a;
+            if (HASH[a.toInt()] == char2) {
+                code2 = a
             }
-            a++;
+            a++
         }
-        return (short) (code1 + code2);
+        return (code1 + code2).toShort()
     }
 
-    public static short getNumeroPorValorHash(final char c) {
-        for (short a = 0; a < HASH.length; a++) {
+    fun getNumeroPorValorHash(c: Char): Short {
+        for (a in HASH.indices) {
             if (HASH[a] == c) {
-                return a;
+                return a.toShort()
             }
         }
-        return -1;
+        return -1
     }
 
-    public static char getValorHashPorNumero(final int c) {
-        return HASH[c];
+    fun getValorHashPorNumero(c: Int): Char {
+        return HASH[c]
     }
 
-    public static String aUTF(final String entrada) {
-        String out = "";
+    fun aUTF(entrada: String?): String {
+        var out = ""
         try {
-            out = new String(entrada.getBytes(StandardCharsets.UTF_8));
-        } catch (final Exception e) {
-            System.out.println("Conversion en UTF-8 fallida! : " + e.getMessage());
+            out = String(entrada!!.toByteArray(StandardCharsets.UTF_8))
+        } catch (e: Exception) {
+            println("Conversion en UTF-8 fallida! : " + e.message)
         }
-        return out;
+        return out
     }
 
-    public static String aUnicode(final String entrada) {
-        String out = "";
+    fun aUnicode(entrada: String): String {
+        var out = ""
         try {
-            out = new String(entrada.getBytes(), StandardCharsets.UTF_8);
-        } catch (final Exception e) {
-            System.out.println("Conversion en UNICODE fallida! : " + e.getMessage());
+            out = String(entrada.toByteArray(), StandardCharsets.UTF_8)
+        } catch (e: Exception) {
+            println("Conversion en UNICODE fallida! : " + e.message)
         }
-        return out;
+        return out
     }
 }

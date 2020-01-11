@@ -1,289 +1,297 @@
-package login;
+package login
 
-import estaticos.GestorSQL;
-import estaticos.GestorSalida;
-import estaticos.MainMultiservidor;
-import estaticos.Mundo;
-import variables.Servidor;
+import estaticos.GestorSQL
+import estaticos.GestorSalida
+import estaticos.MainMultiservidor
+import estaticos.Mundo
+import variables.Servidor
+import java.io.IOException
+import java.net.ServerSocket
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-public class LoginServer implements Runnable {
-    public static final Map<String, Long> Tiempos = new TreeMap<>();
-    private static final CopyOnWriteArrayList<LoginSocket> _clientesEscogerServer = new CopyOnWriteArrayList<>();
-    private static final CopyOnWriteArrayList<LoginSocket> _clientes = new CopyOnWriteArrayList<>();
-    private static final Map<String, ArrayList<LoginSocket>> _IpsClientes = new ConcurrentHashMap<>();
-    private static final int[] _ataques = new int[3];
-    private static ServerSocket _serverSocket;
-    private static byte _j = 0;
-    private static int _alterna = 0;
-    private static long _tiempoBan1 = 0, _tiempoBan2 = 0, _segundosON = 0;
-    private static String _primeraIp = "", _segundaIp = "", _terceraIp = "";
-    private static boolean _ban = true;
-    private static boolean BLOQUEADO;
-
-    public LoginServer() {
-        try {
-            if (MainMultiservidor.PARAM_ANTI_DDOS) {
-                Timer cuentaRegresiva = new Timer();
-                cuentaRegresiva.schedule(new TimerTask() {
-                    public void run() {
-                        _segundosON += 1;
-                        new AntiDDos();
-                    }
-                }, 1000, 1000);
-            }
-            Timer autoSelect = new Timer();
-            autoSelect.schedule(new TimerTask() {
-                public void run() {
-                    GestorSQL.ES_IP_BANEADA("111.222.333.444");// para usar el sql y q no se crashee
-                }
-            }, 300000, 300000);
-            if (MainMultiservidor.SEGUNDOS_INFO_STATUS > 0) {
-                Timer infoStatus = new Timer();
-                infoStatus.schedule(new TimerTask() {
-                    public void run() {
-                        MainMultiservidor.infoStatus();
-                    }
-                }, MainMultiservidor.SEGUNDOS_INFO_STATUS * 1000, MainMultiservidor.SEGUNDOS_INFO_STATUS * 1000);
-            }
-            if (MainMultiservidor.SEGUNDOS_ESTADISTICAS > 0) {
-                Timer estadisticas = new Timer();
-                estadisticas.schedule(new TimerTask() {
-                    public void run() {
-                        MainMultiservidor.escribirEstadisticas();
-                    }
-                }, MainMultiservidor.SEGUNDOS_ESTADISTICAS * 1000, MainMultiservidor.SEGUNDOS_ESTADISTICAS * 1000);
-            }
-            Timer estadisticas = new Timer();
-            estadisticas.schedule(new TimerTask() {
-                public void run() {
-                    refreshServersEstado();
-                }
-            }, 30 * 1000, 30 * 1000);
-            _serverSocket = new ServerSocket(MainMultiservidor.PUERTO_MULTISERVIDOR);
-            Thread _thread = new Thread(this);
-            _thread.setDaemon(true);
-            _thread.start();
-            System.out.println("\n ----- Multiservidor Abierto Puerto " + MainMultiservidor.PUERTO_MULTISERVIDOR
-                    + " ----- \n");
-        } catch (final IOException e) {
-            e.printStackTrace();
-            MainMultiservidor.escribirLog("ERROR AL CREAR EL SERVIDOR GENERAL" + e.toString());
-            System.exit(1);
-        }
-    }
-
-    public static void enviarPacketConexionServidor(Servidor servidor) {
-        for (LoginSocket cliente : _clientes) {
-            new PacketConexion(cliente, servidor);
-        }
-    }
-
-    public static void refreshServersEstado() {
-        for (final LoginSocket cliente : _clientesEscogerServer) {
-            try {
-                GestorSalida.ENVIAR_AH_ESTADO_SERVIDORES(cliente.getOut());
-            } catch (final Exception e) {
-                _clientesEscogerServer.remove(cliente);
-            }
-        }
-    }
-
-    public static void addCliente(LoginSocket cliente) {
-        if (cliente == null) {
-            return;
-        }
-        addIPsClientes(cliente);
-        _clientes.add(cliente);
-    }
-
-    public static void borrarCliente(final LoginSocket cliente) {
-        if (cliente == null) {
-            return;
-        }
-        borrarIPsClientes(cliente);
-        _clientes.remove(cliente);
-    }
-
-    public static void borrarEscogerServer(final LoginSocket cliente) {
-        _clientesEscogerServer.remove(cliente);
-    }
-
-    public static void addEscogerServer(final LoginSocket cliente) {
-        if (!_clientesEscogerServer.contains(cliente)) {
-            _clientesEscogerServer.add(cliente);
-        }
-    }
-
-    public static int getCantidadIps(String ip) {
-        int cant = getIPsClientes(ip);
-        for (final Servidor server : Mundo.Servidores.values()) {
-            cant += server.getCantidadPorIP(ip);
-        }
-        return cant;
-    }
-
-    private static void addIPsClientes(LoginSocket s) {
-        String ip = s.getActualIP();
-        _IpsClientes.computeIfAbsent(ip, k -> new ArrayList<>());
-        if (!_IpsClientes.get(ip).contains(s)) {
-            _IpsClientes.get(ip).add(s);
-        }
-    }
-
-    private static void borrarIPsClientes(LoginSocket s) {
-        String ip = s.getActualIP();
-        if (_IpsClientes.get(ip) == null) {
-            return;
-        }
-        _IpsClientes.get(ip).remove(s);
-    }
-
-    private static int getIPsClientes(String ip) {
-        if (_IpsClientes.get(ip) == null) {
-            return 0;
-        }
-        return _IpsClientes.get(ip).size();
-    }
-
-    public static void cerrarServidorGeneral() {
-        try {
-            _serverSocket.close();
-        } catch (final Exception ignored) {
-        }
-    }
-
-    public void run() {
+class LoginServer : Runnable {
+    override fun run() {
         try {
             while (true) {
-                final Socket socket = _serverSocket.accept();
-                final String ip = socket.getInetAddress().getHostAddress();
+                val socket = _serverSocket!!.accept()
+                val ip = socket.inetAddress.hostAddress
                 if (MainMultiservidor.PARAM_MOSTRAR_IP) {
-                    System.out.println("SE ESTA CONECTANDO LA IP " + ip);
+                    println("SE ESTA CONECTANDO LA IP $ip")
                 }
                 if (BLOQUEADO || GestorSQL.ES_IP_BANEADA(ip)) {
                     try {
-                        socket.close();
-                    } catch (final Exception ignored) {
+                        socket.close()
+                    } catch (ignored: Exception) {
                     }
-                    continue;
+                    continue
                 }
-                if (Tiempos.get(ip) != null
-                        && Tiempos.get(ip) + (MainMultiservidor.MILISEGUNDOS_SIG_CONEXION) > System.currentTimeMillis()) {
+                if (Tiempos[ip] != null
+                        && Tiempos[ip]!! + MainMultiservidor.MILISEGUNDOS_SIG_CONEXION > System.currentTimeMillis()) {
                     try {
-                        socket.close();
-                    } catch (final Exception ignored) {
+                        socket.close()
+                    } catch (ignored: Exception) {
                     }
-                    continue;
+                    continue
                 }
-                Tiempos.put(ip, System.currentTimeMillis());
+                Tiempos[ip] = System.currentTimeMillis()
                 if (MainMultiservidor.PARAM_ANTI_DDOS) {
-                    _ataques[_j]++;
-                    _alterna += 1;
+                    _ataques[_j.toInt()]++
+                    _alterna += 1
                     if (_alterna == 1) {
-                        _primeraIp = ip;
+                        _primeraIp = ip
                         if (_ban) {
-                            _tiempoBan1 = System.currentTimeMillis();
+                            _tiempoBan1 = System.currentTimeMillis()
                         } else {
-                            _tiempoBan2 = System.currentTimeMillis();
+                            _tiempoBan2 = System.currentTimeMillis()
                         }
-                        _ban = !_ban;
+                        _ban = !_ban
                     } else if (_alterna == 2) {
-                        _segundaIp = ip;
+                        _segundaIp = ip
                         if (_ban) {
-                            _tiempoBan1 = System.currentTimeMillis();
+                            _tiempoBan1 = System.currentTimeMillis()
                         } else {
-                            _tiempoBan2 = System.currentTimeMillis();
+                            _tiempoBan2 = System.currentTimeMillis()
                         }
-                        _ban = !_ban;
+                        _ban = !_ban
                     } else {
-                        _terceraIp = ip;
-                        _alterna = 0;
+                        _terceraIp = ip
+                        _alterna = 0
                         if (_ban) {
-                            _tiempoBan1 = System.currentTimeMillis();
+                            _tiempoBan1 = System.currentTimeMillis()
                         } else {
-                            _tiempoBan2 = System.currentTimeMillis();
+                            _tiempoBan2 = System.currentTimeMillis()
                         }
-                        _ban = !_ban;
+                        _ban = !_ban
                     }
-                    if (_primeraIp.equals(ip) && _segundaIp.equals(ip) && _terceraIp.equals(ip)
-                            && Math.abs(_tiempoBan1 - _tiempoBan2) < 200) {
-                        GestorSQL.INSERT_BAN_IP(ip);
+                    if (_primeraIp == ip && _segundaIp == ip && _terceraIp == ip && Math.abs(_tiempoBan1 - _tiempoBan2) < 200) {
+                        GestorSQL.INSERT_BAN_IP(ip)
                         try {
-                            socket.close();
-                        } catch (final Exception ignored) {
+                            socket.close()
+                        } catch (ignored: Exception) {
                         }
-                        continue;
+                        continue
                     }
                 }
-                new LoginSocket(socket);
+                LoginSocket(socket)
             }
-        } catch (final IOException e) {
-            MainMultiservidor.escribirLog("ERROR EN EL LOGIN SERVER");
-            e.printStackTrace();
+        } catch (e: IOException) {
+            MainMultiservidor.escribirLog("ERROR EN EL LOGIN SERVER")
+            e.printStackTrace()
         } finally {
             try {
-                MainMultiservidor.escribirLog("CIERRE DEL LOGIN SERVER");
-                if (!_serverSocket.isClosed()) {
-                    _serverSocket.close();
+                MainMultiservidor.escribirLog("CIERRE DEL LOGIN SERVER")
+                if (!_serverSocket!!.isClosed) {
+                    _serverSocket!!.close()
                 }
-            } catch (final IOException ignored) {
+            } catch (ignored: IOException) {
             }
         }
     }
 
-    static class PacketConexion extends Thread {
-        private final LoginSocket _cliente;
-        private final Servidor _servidor;
-
-        PacketConexion(LoginSocket cliente, Servidor servidor) {
-            _cliente = cliente;
-            _servidor = servidor;
-            this.setDaemon(true);
-            this.start();
-        }
-
-        public void run() {
+    internal class PacketConexion(private val _cliente: LoginSocket, private val _servidor: Servidor) : Thread() {
+        override fun run() {
             try {
-                if (_servidor.getConector() == null) {
-                    return;
+                if (_servidor.conector == null) {
+                    return
                 }
-                _servidor.getConector().sendPacket(_cliente.getPacketConexion());
-                Thread.sleep(1000);
-                if (_cliente.getCuenta() == null) {
-                    return;
+                _servidor.conector!!.sendPacket(_cliente.packetConexion)
+                sleep(1000)
+                if (_cliente.cuenta == null) {
+                    return
                 }
-                GestorSalida.ENVIAR_AxK_TIEMPO_ABONADO_NRO_PJS(_cliente.getOut(), _cliente.getCuenta());
-            } catch (Exception ignored) {
+                GestorSalida.ENVIAR_AxK_TIEMPO_ABONADO_NRO_PJS(_cliente.out, _cliente.cuenta!!)
+            } catch (ignored: Exception) {
+            }
+        }
+
+        init {
+            this.isDaemon = true
+            start()
+        }
+    }
+
+    internal class AntiDDos : Thread() {
+        override fun run() {
+            if (MainMultiservidor.PARAM_ANTI_DDOS) {
+                val _minAtaque = 25
+                if (!BLOQUEADO && _ataques[0] > _minAtaque && _ataques[1] > _minAtaque && _ataques[2] > _minAtaque) {
+                    BLOQUEADO = true
+                    System.err.println("EL SERVIDOR ESTA SIENDO ATACADO EN UNOS MINUTOS SE RESTABLECERA A SU ESTADO NORMAL")
+                } else if (BLOQUEADO && _ataques[0] < _minAtaque && _ataques[1] < _minAtaque && _ataques[2] < _minAtaque) {
+                    BLOQUEADO = false
+                    System.err.println("EL SERVIDOR HA SIDO RESTABLECIDO, ATAQUE TERMINADO")
+                }
+                _j = (_segundosON % 3).toByte()
+                _ataques[_j.toInt()] = 0
+            }
+        }
+
+        init {
+            this.isDaemon = true
+            start()
+        }
+    }
+
+    companion object {
+        @JvmField
+        val Tiempos: MutableMap<String, Long> = TreeMap()
+        private val _clientesEscogerServer = CopyOnWriteArrayList<LoginSocket>()
+        private val _clientes = CopyOnWriteArrayList<LoginSocket>()
+        private val _IpsClientes: MutableMap<String, ArrayList<LoginSocket>> = ConcurrentHashMap()
+        private val _ataques = IntArray(3)
+        private var _serverSocket: ServerSocket? = null
+        private var _j: Byte = 0
+        private var _alterna = 0
+        private var _tiempoBan1: Long = 0
+        private var _tiempoBan2: Long = 0
+        private var _segundosON: Long = 0
+        private var _primeraIp = ""
+        private var _segundaIp = ""
+        private var _terceraIp = ""
+        private var _ban = true
+        private var BLOQUEADO = false
+        @JvmStatic
+        fun enviarPacketConexionServidor(servidor: Servidor) {
+            for (cliente in _clientes) {
+                PacketConexion(cliente, servidor)
+            }
+        }
+
+        @JvmStatic
+        fun refreshServersEstado() {
+            for (cliente in _clientesEscogerServer) {
+                try {
+                    GestorSalida.ENVIAR_AH_ESTADO_SERVIDORES(cliente.out)
+                } catch (e: Exception) {
+                    _clientesEscogerServer.remove(cliente)
+                }
+            }
+        }
+
+        @JvmStatic
+        fun addCliente(cliente: LoginSocket?) {
+            if (cliente == null) {
+                return
+            }
+            addIPsClientes(cliente)
+            _clientes.add(cliente)
+        }
+
+        @JvmStatic
+        fun borrarCliente(cliente: LoginSocket?) {
+            if (cliente == null) {
+                return
+            }
+            borrarIPsClientes(cliente)
+            _clientes.remove(cliente)
+        }
+
+        @JvmStatic
+        fun borrarEscogerServer(cliente: LoginSocket?) {
+            _clientesEscogerServer.remove(cliente)
+        }
+
+        @JvmStatic
+        fun addEscogerServer(cliente: LoginSocket) {
+            if (!_clientesEscogerServer.contains(cliente)) {
+                _clientesEscogerServer.add(cliente)
+            }
+        }
+
+        @JvmStatic
+        fun getCantidadIps(ip: String): Int {
+            var cant = getIPsClientes(ip)
+            for (server in Mundo.Servidores.values) {
+                if (server != null) {
+                    cant += server.getCantidadPorIP(ip)!!
+                }
+            }
+            return cant
+        }
+
+        private fun addIPsClientes(s: LoginSocket) {
+            val ip = s.actualIP
+            if (ip != null) {
+                _IpsClientes.computeIfAbsent(ip) { k: String? -> ArrayList() }
+            }
+            if (!_IpsClientes[ip]!!.contains(s)) {
+                _IpsClientes[ip]!!.add(s)
+            }
+        }
+
+        private fun borrarIPsClientes(s: LoginSocket) {
+            val ip = s.actualIP
+            if (_IpsClientes[ip] == null) {
+                return
+            }
+            _IpsClientes[ip]!!.remove(s)
+        }
+
+        private fun getIPsClientes(ip: String): Int {
+            return if (_IpsClientes[ip] == null) {
+                0
+            } else _IpsClientes[ip]!!.size
+        }
+
+        fun cerrarServidorGeneral() {
+            try {
+                _serverSocket!!.close()
+            } catch (ignored: Exception) {
             }
         }
     }
 
-    static class AntiDDos extends Thread {
-        AntiDDos() {
-            this.setDaemon(true);
-            this.start();
-        }
-
-        public void run() {
+    init {
+        try {
             if (MainMultiservidor.PARAM_ANTI_DDOS) {
-                int _minAtaque = 25;
-                if (!BLOQUEADO && _ataques[0] > _minAtaque && _ataques[1] > _minAtaque && _ataques[2] > _minAtaque) {
-                    BLOQUEADO = true;
-                    System.err.println("EL SERVIDOR ESTA SIENDO ATACADO EN UNOS MINUTOS SE RESTABLECERA A SU ESTADO NORMAL");
-                } else if (BLOQUEADO && _ataques[0] < _minAtaque && _ataques[1] < _minAtaque && _ataques[2] < _minAtaque) {
-                    BLOQUEADO = false;
-                    System.err.println("EL SERVIDOR HA SIDO RESTABLECIDO, ATAQUE TERMINADO");
-                }
-                _j = (byte) (_segundosON % 3);
-                _ataques[_j] = 0;
+                val cuentaRegresiva = Timer()
+                cuentaRegresiva.schedule(object : TimerTask() {
+                    override fun run() {
+                        _segundosON += 1
+                        AntiDDos()
+                    }
+                }, 1000, 1000)
             }
+            val autoSelect = Timer()
+            autoSelect.schedule(object : TimerTask() {
+                override fun run() {
+                    GestorSQL.ES_IP_BANEADA("111.222.333.444") // para usar el sql y q no se crashee
+                }
+            }, 300000, 300000)
+            if (MainMultiservidor.SEGUNDOS_INFO_STATUS > 0) {
+                val infoStatus = Timer()
+                infoStatus.schedule(object : TimerTask() {
+                    override fun run() {
+                        MainMultiservidor.infoStatus()
+                    }
+                }, MainMultiservidor.SEGUNDOS_INFO_STATUS * 1000.toLong(), MainMultiservidor.SEGUNDOS_INFO_STATUS * 1000.toLong())
+            }
+            if (MainMultiservidor.SEGUNDOS_ESTADISTICAS > 0) {
+                val estadisticas = Timer()
+                estadisticas.schedule(object : TimerTask() {
+                    override fun run() {
+                        MainMultiservidor.escribirEstadisticas()
+                    }
+                }, MainMultiservidor.SEGUNDOS_ESTADISTICAS * 1000.toLong(), MainMultiservidor.SEGUNDOS_ESTADISTICAS * 1000.toLong())
+            }
+            val estadisticas = Timer()
+            estadisticas.schedule(object : TimerTask() {
+                override fun run() {
+                    refreshServersEstado()
+                }
+            }, 30 * 1000.toLong(), 30 * 1000.toLong())
+            _serverSocket = ServerSocket(MainMultiservidor.PUERTO_MULTISERVIDOR)
+            val _thread = Thread(this)
+            _thread.isDaemon = true
+            _thread.start()
+            println("\n ----- Multiservidor Abierto Puerto " + MainMultiservidor.PUERTO_MULTISERVIDOR
+                    + " ----- \n")
+        } catch (e: IOException) {
+            e.printStackTrace()
+            MainMultiservidor.escribirLog("ERROR AL CREAR EL SERVIDOR GENERAL$e")
+            System.exit(1)
         }
     }
 }

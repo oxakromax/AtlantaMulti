@@ -1,195 +1,180 @@
-package sincronizador;
+package sincronizador
 
-import estaticos.Encriptador;
-import estaticos.MainMultiservidor;
-import estaticos.Mundo;
-import login.LoginServer;
-import variables.Cuenta;
-import variables.Servidor;
+import estaticos.Encriptador
+import estaticos.MainMultiservidor
+import estaticos.Mundo
+import login.LoginServer.Companion.enviarPacketConexionServidor
+import login.LoginServer.Companion.refreshServersEstado
+import variables.Servidor
+import java.io.BufferedInputStream
+import java.io.PrintWriter
+import java.net.Socket
+import java.nio.charset.StandardCharsets
 
-import java.io.BufferedInputStream;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-
-public class SincronizadorSocket implements Runnable {
-    private Socket _socket;
-    private BufferedInputStream _in;
-    private PrintWriter _out;
-    private Servidor _servidor;
-    private String _IP;
-
-    public SincronizadorSocket(Socket socket) {
-        try {
-            _socket = socket;
-            _IP = _socket.getInetAddress().getHostAddress();
-            if (MainMultiservidor.MOSTRAR_SINCRONIZACION) {
-                System.out.println("INTENTO SINCRONIZAR IP: " + _IP);
-            }
-            _in = new BufferedInputStream((_socket.getInputStream()));
-            _out = new PrintWriter(_socket.getOutputStream());
-            Thread _thread = new Thread(this);
-            _thread.setDaemon(true);
-            _thread.start();
-        } catch (final Exception e) {
-            if (MainMultiservidor.MOSTRAR_SINCRONIZACION) {
-                System.out.println("INTENTO FALLIDO -> " + e.toString());
-            }
-            desconectar();
-        }
-    }
-
-    public void run() {
+class SincronizadorSocket(socket: Socket?) : Runnable {
+    private var _socket: Socket? = null
+    private var _in: BufferedInputStream? = null
+    private var _out: PrintWriter? = null
+    private var _servidor: Servidor? = null
+    private var _IP: String? = null
+    override fun run() {
         try {
             try {
-                Thread.sleep(1000);
-            } catch (final Exception ignored) {
+                Thread.sleep(1000)
+            } catch (ignored: Exception) {
             }
-            int c = -1;
-            int lenght = -1;
-            int index = 0;
-            byte[] bytes = new byte[1];
-            while ((c = _in.read()) != -1) {
+            var c = -1
+            var lenght = -1
+            var index = 0
+            var bytes = ByteArray(1)
+            while (_in!!.read().also { c = it } != -1) {
                 if (lenght == -1) {
-                    lenght = _in.available();
-                    bytes = new byte[lenght + 1];
-                    index = 0;
+                    lenght = _in!!.available()
+                    bytes = ByteArray(lenght + 1)
+                    index = 0
                 }
-                bytes[index++] = (byte) c;
-                if (bytes.length == index) {
-                    String tempPacket = new String(bytes, StandardCharsets.UTF_8);
-                    for (String packet : tempPacket.split("[\u0000\n\r]")) {
+                bytes[index++] = c.toByte()
+                if (bytes.size == index) {
+                    val tempPacket = String(bytes, StandardCharsets.UTF_8)
+                    for (packet in tempPacket.split("[\u0000\n\r]".toRegex()).toTypedArray()) {
                         if (packet.isEmpty()) {
-                            continue;
+                            continue
                         }
-                        analizarPackets(packet);
+                        analizarPackets(packet)
                     }
-                    lenght = -1;
+                    lenght = -1
                 }
             }
-        } catch (final Exception e) {
-            // System.out.println("EXCEPTION RUN CONECTOR, IP: " + _IP + " PUERTO: " + _puerto);
+        } catch (e: Exception) { // System.out.println("EXCEPTION RUN CONECTOR, IP: " + _IP + " PUERTO: " + _puerto);
         } finally {
             if (_servidor != null) {
-                System.out.println("<<<--- CERRANDO CONEXION SERVIDOR ID " + _servidor.getID() + ", IP " + _IP + " --->>>");
+                println("<<<--- CERRANDO CONEXION SERVIDOR ID " + _servidor!!.id + ", IP " + _IP + " --->>>")
             }
-            desconectar();
+            desconectar()
         }
     }
 
-    private void analizarPackets(final String packet) {
+    private fun analizarPackets(packet: String) {
         try {
-            switch (packet.charAt(0)) {
-                case 'A':// cuenta
-                    try {
-                        final String[] str = packet.substring(1).split(";");
-                        final int cuentaID = Integer.parseInt(str[0]);
-                        final int cantPersonajes = Integer.parseInt(str[1]);
-                        Cuenta cuenta = Mundo.getCuenta(cuentaID);
-                        cuenta.setPersonajes(_servidor.getID(), cantPersonajes);
-                    } catch (final Exception ignored) {
+            when (packet[0]) {
+                'A' -> try {
+                    val str = packet.substring(1).split(";".toRegex()).toTypedArray()
+                    val cuentaID = str[0].toInt()
+                    val cantPersonajes = str[1].toInt()
+                    val cuenta = Mundo.getCuenta(cuentaID)
+                    if (cuenta != null) {
+                        cuenta.setPersonajes(_servidor!!.id, cantPersonajes)
                     }
-                    break;
-                case 'C':// cambiar conectados
-                    try {
-                        final int conectados = Integer.parseInt(packet.substring(1));
-                        if (_servidor != null) {
-                            _servidor.setConectados(conectados);
-                        }
-                    } catch (final Exception e) {
-                        e.printStackTrace();
+                } catch (ignored: Exception) {
+                }
+                'C' -> try {
+                    val conectados = packet.substring(1).toInt()
+                    if (_servidor != null) {
+                        _servidor!!.conectados = conectados
                     }
-                    break;
-                case 'D':// asignando servidor
-                    try {
-                        final String[] str = packet.substring(1).split(";");
-                        final int servidorID = Integer.parseInt(str[0]);
-                        final int puerto = Integer.parseInt(str[1]);
-                        final int prioridad = Integer.parseInt(str[2]);
-                        final int estado = Integer.parseInt(str[3]);
-                        if (str.length > 4) {
-                            _IP = str[4];
-                        }
-                        Servidor servidor = Mundo.Servidores.get(servidorID);
-                        if (servidor == null) {
-                            servidor = new Servidor(servidorID, puerto, Servidor.SERVIDOR_OFFLINE);
-                            Mundo.Servidores.put(servidorID, servidor);
-                        }
-                        _servidor = servidor;
-                        _servidor.setIP(_IP);
-                        _servidor.setPrioridad(prioridad);
-                        _servidor.setEstado(estado);
-                        _servidor.setConector(this);
-                        LoginServer.refreshServersEstado();
-                        LoginServer.enviarPacketConexionServidor(_servidor);
-                        System.out
-                                .println("<<<--- INICIANDO CONEXION SERVIDOR ID " + _servidor.getID() + ", IP " + _IP + " --->>>");
-                    } catch (final Exception ignored) {
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                'D' -> try {
+                    val str = packet.substring(1).split(";".toRegex()).toTypedArray()
+                    val servidorID = str[0].toInt()
+                    val puerto = str[1].toInt()
+                    val prioridad = str[2].toInt()
+                    val estado = str[3].toInt()
+                    if (str.size > 4) {
+                        _IP = str[4]
                     }
-                    break;
-                case 'I':
-                    try {
-                        if (_servidor != null) {
-                            final String[] str = packet.substring(1).split(";");
-                            final String ip = str[0];
-                            final int cantidad = Integer.parseInt(str[1]);
-                            _servidor.setCantidadIp(ip, cantidad);
-                        }
-                    } catch (final Exception ignored) {
+                    var servidor = Mundo.Servidores[servidorID]
+                    if (servidor == null) {
+                        servidor = Servidor(servidorID, puerto, Servidor.SERVIDOR_OFFLINE)
+                        Mundo.Servidores[servidorID] = servidor
                     }
-                    break;
-                case 'S':// cambiar estado
-                    try {
-                        final int estado = Integer.parseInt(packet.substring(1));
-                        if (_servidor != null) {
-                            if (estado == Servidor.SERVIDOR_OFFLINE) {
-                                desconectar();
-                            } else {
-                                _servidor.setEstado(estado);
-                                LoginServer.refreshServersEstado();
-                            }
-                        }
-                    } catch (final Exception ignored) {
+                    _servidor = servidor
+                    _servidor!!.ip = _IP.toString()
+                    _servidor!!.setPrioridad(prioridad)
+                    _servidor!!.estado = estado
+                    _servidor!!.conector = this
+                    refreshServersEstado()
+                    enviarPacketConexionServidor(_servidor!!)
+                    println("<<<--- INICIANDO CONEXION SERVIDOR ID " + _servidor!!.id + ", IP " + _IP + " --->>>")
+                } catch (ignored: Exception) {
+                }
+                'I' -> try {
+                    if (_servidor != null) {
+                        val str = packet.substring(1).split(";".toRegex()).toTypedArray()
+                        val ip = str[0]
+                        val cantidad = str[1].toInt()
+                        _servidor!!.setCantidadIp(ip, cantidad)
                     }
-                    break;
+                } catch (ignored: Exception) {
+                }
+                'S' -> try {
+                    val estado = packet.substring(1).toInt()
+                    if (_servidor != null) {
+                        if (estado == Servidor.SERVIDOR_OFFLINE) {
+                            desconectar()
+                        } else {
+                            _servidor!!.estado = estado
+                            refreshServersEstado()
+                        }
+                    }
+                } catch (ignored: Exception) {
+                }
             }
-        } catch (final Exception ignored) {
+        } catch (ignored: Exception) {
         }
     }
 
-    public boolean estaCerrado() {
-        return _socket == null || _socket.isClosed();
+    fun estaCerrado(): Boolean {
+        return _socket == null || _socket!!.isClosed()
     }
 
-    private void desconectar() {
+    private fun desconectar() {
         try {
-            if (_socket != null && !_socket.isClosed()) {
-                _socket.close();
+            if (_socket != null && !_socket!!.isClosed()) {
+                _socket!!.close()
             }
             if (_servidor != null) {
-                _servidor.setConector(null);
-                _servidor.setEstado(Servidor.SERVIDOR_OFFLINE);
-                LoginServer.refreshServersEstado();
+                _servidor!!.conector = null
+                _servidor!!.estado = Servidor.SERVIDOR_OFFLINE
+                refreshServersEstado()
             }
-            if (_in != null) {
-                _in.close();
-            }
-            if (_out != null) {
-                _out.close();
-            }
-        } catch (final Exception ignored) {
+            _in?.close()
+            _out?.close()
+        } catch (ignored: Exception) {
         }
     }
 
-    public void sendPacket(String packet) {
-        if (_out != null && !packet.isEmpty() && !packet.equals("" + (char) 0x00)) {
-            packet = Encriptador.aUTF(packet);
+    fun sendPacket(packet: String) {
+        var packet = packet
+        if (_out != null && !packet.isEmpty() && packet != "" + 0x00.toChar()) {
+            packet = Encriptador.aUTF(packet)
             try {
-                System.out.println("ENVIAR PACKET SERVIDOR (" + _servidor.getID() + ") >> " + packet);
-            } catch (final Exception ignored) {
+                println("ENVIAR PACKET SERVIDOR (" + _servidor!!.id + ") >> " + packet)
+            } catch (ignored: Exception) {
             }
-            _out.print(packet + (char) 0x00);
-            _out.flush();
+            _out!!.print(packet + 0x00.toChar())
+            _out!!.flush()
+        }
+    }
+
+    init {
+        try {
+            _socket = socket
+            _IP = _socket!!.inetAddress.hostAddress
+            if (MainMultiservidor.MOSTRAR_SINCRONIZACION) {
+                println("INTENTO SINCRONIZAR IP: $_IP")
+            }
+            _in = BufferedInputStream(_socket!!.getInputStream())
+            _out = PrintWriter(_socket!!.getOutputStream())
+            val _thread = Thread(this)
+            _thread.isDaemon = true
+            _thread.start()
+        } catch (e: Exception) {
+            if (MainMultiservidor.MOSTRAR_SINCRONIZACION) {
+                println("INTENTO FALLIDO -> $e")
+            }
+            desconectar()
         }
     }
 }
