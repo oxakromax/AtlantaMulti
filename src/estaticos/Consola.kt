@@ -2,6 +2,7 @@ package estaticos
 
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import kotlin.system.exitProcess
 
 internal class Consola : Thread() {
     override fun run() {
@@ -38,7 +39,7 @@ internal class Consola : Thread() {
                         MainMultiservidor.cargarConfiguracion()
                         println("Se recargo la config correctamente")
                     }
-                    "EXIT", "RESET" -> System.exit(0)
+                    "EXIT", "RESET" -> exitProcess(0)
                     else -> {
                         println("Comando no existe")
                         return

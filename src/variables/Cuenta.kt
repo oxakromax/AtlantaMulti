@@ -1,15 +1,18 @@
+@file:Suppress("NonAsciiCharacters", "NonAsciiCharacters", "NonAsciiCharacters", "NonAsciiCharacters", "NonAsciiCharacters", "NonAsciiCharacters", "NonAsciiCharacters", "NonAsciiCharacters", "NonAsciiCharacters", "NonAsciiCharacters", "NonAsciiCharacters", "NonAsciiCharacters")
+
 package variables
 
 import estaticos.GestorSQL
 import login.LoginSocket
 import java.util.*
+import kotlin.math.max
 
 class Cuenta(val id: Int, val nombre: String, apodo: String?) {
     private val _personajes: MutableMap<Int, Int> = TreeMap()
     var socket: LoginSocket? = null
 
     val tiempoAbono: Long
-        get() = Math.max(0, GestorSQL.GET_ABONO(nombre) - System.currentTimeMillis())
+        get() = max(0, GestorSQL.GET_ABONO(nombre) - System.currentTimeMillis())
 
     val actualizar: Byte
         get() = GestorSQL.GET_ACTUALIZAR(nombre)
@@ -33,7 +36,7 @@ class Cuenta(val id: Int, val nombre: String, apodo: String?) {
         get() = GestorSQL.GET_RANGO(nombre).toInt()
 
     val abono: Long
-        get() = Math.max(0, GestorSQL.GET_ABONO(nombre) - System.currentTimeMillis())
+        get() = 0.coerceAtLeast((GestorSQL.GET_ABONO(nombre) - System.currentTimeMillis()).toInt()).toLong()
 
     fun pararTimer() {
         try {
@@ -49,7 +52,7 @@ class Cuenta(val id: Int, val nombre: String, apodo: String?) {
         _personajes[servidor] = cantidad
     }
 
-    val stringPersonajes: String
+    val stringPersonajes: String = ""
         get() = try {
             val str = StringBuilder()
             for ((key, value) in _personajes) {
@@ -62,7 +65,7 @@ class Cuenta(val id: Int, val nombre: String, apodo: String?) {
         } catch (e: NullPointerException) {
             ""
         } catch (e: Exception) {
-            stringPersonajes
+            field
         }
 
 }

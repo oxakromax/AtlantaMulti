@@ -7,7 +7,7 @@ import java.util.*
 object GestorSalida {
     fun enviar(out: PrintWriter?, packet: String?) {
         var packet = packet
-        if (out != null && !packet!!.isEmpty() && packet != "" + 0x00.toChar()) {
+        if (out != null && packet!!.isNotEmpty() && packet != "" + 0x00.toChar()) {
             packet = Encriptador.aUTF(packet)
             out.print(packet + 0x00.toChar())
             out.flush()

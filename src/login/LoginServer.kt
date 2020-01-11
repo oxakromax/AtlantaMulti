@@ -10,6 +10,8 @@ import java.net.ServerSocket
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.math.abs
+import kotlin.system.exitProcess
 
 class LoginServer : Runnable {
     override fun run() {
@@ -65,7 +67,7 @@ class LoginServer : Runnable {
                         }
                         _ban = !_ban
                     }
-                    if (_primeraIp == ip && _segundaIp == ip && _terceraIp == ip && Math.abs(_tiempoBan1 - _tiempoBan2) < 200) {
+                    if (_primeraIp == ip && _segundaIp == ip && _terceraIp == ip && abs(_tiempoBan1 - _tiempoBan2) < 200) {
                         GestorSQL.INSERT_BAN_IP(ip)
                         try {
                             socket.close()
@@ -291,7 +293,7 @@ class LoginServer : Runnable {
         } catch (e: IOException) {
             e.printStackTrace()
             MainMultiservidor.escribirLog("ERROR AL CREAR EL SERVIDOR GENERAL$e")
-            System.exit(1)
+            exitProcess(1)
         }
     }
 }

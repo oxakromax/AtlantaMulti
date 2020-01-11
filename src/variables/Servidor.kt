@@ -16,7 +16,7 @@ class Servidor(val id: Int, val puerto: Int, var estado: Int) {
     fun getCantidadPorIP(ip: String?): Int? {
         return if (_ips[ip] == null) {
             0
-        } else _ips.get(ip)
+        } else _ips[ip]
     }
 
     fun setPrioridad(prioridad: Int) {
@@ -26,7 +26,7 @@ class Servidor(val id: Int, val puerto: Int, var estado: Int) {
     val stringParaAH: String
         get() {
             val _puedeLoguear = true
-            return id.toString() + ";" + estado + ";" + _prioridad + ";" + if (_puedeLoguear) 1 else 0
+            return id.toString() + ";" + estado + ";" + _prioridad + ";" + 1
         }
 
     companion object {

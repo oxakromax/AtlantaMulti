@@ -40,7 +40,7 @@ class LoginSocket(socket: Socket?) : Runnable {
             if (MainMultiservidor.SEGUNDOS_ESPERA > 0) {
                 _timer = Timer(MainMultiservidor.SEGUNDOS_ESPERA * 1000, ActionListener { arg0: ActionEvent? ->
                     GestorSQL.INSERT_BAN_IP(actualIP)
-                    MainMultiservidor.escribirLog("LA IP " + actualIP + " ESTA ATACANDO EL MULTISERVIDOR")
+                    MainMultiservidor.escribirLog("LA IP $actualIP ESTA ATACANDO EL MULTISERVIDOR")
                     desconectar()
                 })
             }
@@ -99,7 +99,7 @@ class LoginSocket(socket: Socket?) : Runnable {
         try {
             borrarEscogerServer(this)
             borrarCliente(this)
-            if (_socket != null && !_socket!!.isClosed()) {
+            if (_socket != null && !_socket!!.isClosed) {
                 _socket!!.close()
             }
             _in?.close()
@@ -222,7 +222,7 @@ class LoginSocket(socket: Socket?) : Runnable {
                                 return
                             }
                         } else if (cuentasPorIP > 1) {
-                            GestorSalida.ENVIAR_M0_MENSAJE_SVR_MUESTRA_DISCONNECT(out, "34", "1;" + actualIP, "")
+                            GestorSalida.ENVIAR_M0_MENSAJE_SVR_MUESTRA_DISCONNECT(out, "34", "1;$actualIP", "")
                             desconectar()
                             return
                         }
@@ -245,7 +245,7 @@ class LoginSocket(socket: Socket?) : Runnable {
                         }
                         Mundo.enviarPacketsAServidores(this)
                         GestorSQL.UPDATE_ULTIMA_IP(actualIP, cuenta!!.id)
-                        if (!MainMultiservidor.SONIDO_BIENVENIDA.isEmpty()) {
+                        if (MainMultiservidor.SONIDO_BIENVENIDA.isNotEmpty()) {
                             GestorSalida.ENVIAR_Bv_SONAR_MP3(out, MainMultiservidor.SONIDO_BIENVENIDA)
                         }
                     } else {

@@ -43,7 +43,7 @@ object Mundo {
     fun packetParaAH(): String {
         val str = StringBuilder()
         for (servidor in Servidores.values) {
-            if (str.length > 0) {
+            if (str.isNotEmpty()) {
                 str.append("|")
             }
             str.append(servidor!!.stringParaAH)

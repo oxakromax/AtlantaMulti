@@ -1,6 +1,8 @@
 package estaticos
 
 import java.nio.charset.StandardCharsets
+import kotlin.math.floor
+import kotlin.math.pow
 
 object Encriptador {
     const val NUMEROS = "0123456789"
@@ -15,12 +17,12 @@ object Encriptador {
     private const val GUIONES = "_-"
     fun palabraAleatorio(limite: Int): String {
         val nombre = StringBuilder()
-        var i = Math.floor(Math.random() * ABC_MAY.length).toInt()
+        var i = floor(Math.random() * ABC_MAY.length).toInt()
         var temp = ABC_MAY[i]
         nombre.append(temp)
         var xxx: Char
         while (nombre.length < limite) {
-            i = Math.floor(Math.random() * ABC_MIN.length).toInt()
+            i = floor(Math.random() * ABC_MIN.length).toInt()
             xxx = ABC_MIN[i]
             if (temp == xxx || VOCALES.contains(temp.toString() + "") && VOCALES.contains(xxx.toString() + "")
                     || CONSONANTES.contains(temp.toString() + "") && CONSONANTES.contains(xxx.toString() + "")) {
@@ -53,7 +55,7 @@ object Encriptador {
 
     fun encriptarContraseña(key: String, contraseña: String): String {
         val encriptado = StringBuilder("#1")
-        for (i in 0 until contraseña.length) {
+        for (i in contraseña.indices) {
             val charPass = contraseña[i]
             val charKey = key[i]
             val a = charPass.toInt() / 16
@@ -67,14 +69,13 @@ object Encriptador {
     }
 
     fun desencriptarContraseña(contraseña: String, key: String): String {
-        var l1: Int
         var l2: Int
         var l3: Int
         var l4: Int
         var l5: Int
         var l7 = ""
         val abecedario = ABC_MIN + ABC_MAY + GUIONES
-        l1 = 0
+        var l1: Int = 0
         while (l1 <= contraseña.length - 1) {
             l3 = key[l1 / 2].toInt()
             l2 = abecedario.indexOf(contraseña[l1])
@@ -83,9 +84,9 @@ object Encriptador {
             l2 = abecedario.indexOf(contraseña[l11])
             l5 = 64 + l2 - l3
             if (l5 < 0) {
-                l5 = 64 + l5
+                l5 += 64
             }
-            l7 = l7 + (16 * l4 + l5).toChar()
+            l7 += (16 * l4 + l5).toChar()
             l1 += 2
         }
         return l7
@@ -102,7 +103,7 @@ object Encriptador {
                 if (i and 15 shl 4 or o and 15 == split[cantidad].toInt()) {
                     val A = (i + 48).toChar()
                     val B = (o + 48).toChar()
-                    encriptado.append(Character.toString(A) + B)
+                    encriptado.append(A.toString() + B)
                     i = 0
                     o = 0
                     cantidad++
@@ -121,8 +122,8 @@ object Encriptador {
         var P = puerto
         val numero = StringBuilder()
         for (a in 2 downTo 0) {
-            numero.append(HASH[(P / Math.pow(64.0, a.toDouble())).toInt()])
-            P = P % Math.pow(64.0, a.toDouble()).toInt()
+            numero.append(HASH[(P / 64.0.pow(a.toDouble())).toInt()])
+            P %= 64.0.pow(a.toDouble()).toInt()
         }
         return numero.toString()
     }

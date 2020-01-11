@@ -5,6 +5,7 @@ import sincronizador.SincronizadorServer
 import variables.Servidor
 import java.io.*
 import java.util.*
+import kotlin.system.exitProcess
 
 object MainMultiservidor {
     const val ES_LOCALHOST = false
@@ -14,7 +15,7 @@ object MainMultiservidor {
 //
     var SONIDO_BIENVENIDA = ""
     var URL_LINK_MP3 = "http://localhost/mp3/"
-    var DIRECTORIO_LOCAL_MP3 = "C://wamp/www/mp3/"
+    private var DIRECTORIO_LOCAL_MP3 = "C://wamp/www/mp3/"
     var ENCRIPTAR_IP = false
     var PERMITIR_MULTICUENTA = true
     var MOSTRAR_RECIBIDOS = false
@@ -59,7 +60,7 @@ object MainMultiservidor {
             println("CONEXION OK")
         } else {
             escribirLog("CONEXION SQL INVALIDA!!")
-            System.exit(1)
+            exitProcess(1)
             return
         }
         Mundo.crearMultiServer()
@@ -121,7 +122,7 @@ object MainMultiservidor {
                     val valor = linea.split("=".toRegex()).toTypedArray()[1].trim { it <= ' ' }
                     if (comandos.contains(param)) {
                         println("En el $ARCHIVO_CONFIG se repite el comando $param")
-                        System.exit(1)
+                        exitProcess(1)
                         return
                     } else {
                         comandos.add(param)

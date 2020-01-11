@@ -106,7 +106,7 @@ object GestorSQL {
             print("Conexión a la base de datos: ")
             bdCuentas = DriverManager.getConnection("jdbc:mysql://" + MainMultiservidor.BD_HOST + "/"
                     + MainMultiservidor.BD_CUENTAS + "?autoReconnect=true", MainMultiservidor.BD_USUARIO, MainMultiservidor.BD_PASS)
-            bdCuentas?.setAutoCommit(false)
+            bdCuentas?.autoCommit = false
             if (!bdCuentas?.isValid(1000)!!) {
                 MainMultiservidor.escribirLog("SQLError : Conexion a la BDD invalida")
                 return false

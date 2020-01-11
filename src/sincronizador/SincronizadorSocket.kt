@@ -62,9 +62,7 @@ class SincronizadorSocket(socket: Socket?) : Runnable {
                     val cuentaID = str[0].toInt()
                     val cantPersonajes = str[1].toInt()
                     val cuenta = Mundo.getCuenta(cuentaID)
-                    if (cuenta != null) {
-                        cuenta.setPersonajes(_servidor!!.id, cantPersonajes)
-                    }
+                    cuenta?.setPersonajes(_servidor!!.id, cantPersonajes)
                 } catch (ignored: Exception) {
                 }
                 'C' -> try {
@@ -126,12 +124,12 @@ class SincronizadorSocket(socket: Socket?) : Runnable {
     }
 
     fun estaCerrado(): Boolean {
-        return _socket == null || _socket!!.isClosed()
+        return _socket == null || _socket!!.isClosed
     }
 
     private fun desconectar() {
         try {
-            if (_socket != null && !_socket!!.isClosed()) {
+            if (_socket != null && !_socket!!.isClosed) {
                 _socket!!.close()
             }
             if (_servidor != null) {
@@ -147,7 +145,7 @@ class SincronizadorSocket(socket: Socket?) : Runnable {
 
     fun sendPacket(packet: String) {
         var packet = packet
-        if (_out != null && !packet.isEmpty() && packet != "" + 0x00.toChar()) {
+        if (_out != null && packet.isNotEmpty() && packet != "" + 0x00.toChar()) {
             packet = Encriptador.aUTF(packet)
             try {
                 println("ENVIAR PACKET SERVIDOR (" + _servidor!!.id + ") >> " + packet)
