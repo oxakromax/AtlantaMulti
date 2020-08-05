@@ -3,7 +3,7 @@ package variables
 import sincronizador.SincronizadorSocket
 import java.util.concurrent.ConcurrentHashMap
 
-class Servidor(val id: Int, val puerto: Int, var estado: Int) {
+class Servidor(val id: Int, var puerto: Int, var estado: Int) {
     private val _ips: MutableMap<String, Int> = ConcurrentHashMap()
     var ip = "127.0.0.1"
     var conector: SincronizadorSocket? = null
@@ -26,7 +26,7 @@ class Servidor(val id: Int, val puerto: Int, var estado: Int) {
     val stringParaAH: String
         get() {
             val _puedeLoguear = true
-            return id.toString() + ";" + estado + ";" + _prioridad + ";" + 1
+            return "$id;$estado;$_prioridad;1"
         }
 
     companion object {

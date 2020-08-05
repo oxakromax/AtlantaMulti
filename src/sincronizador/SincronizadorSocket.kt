@@ -86,6 +86,10 @@ class SincronizadorSocket(socket: Socket?) : Runnable {
                     if (servidor == null) {
                         servidor = Servidor(servidorID, puerto, Servidor.SERVIDOR_OFFLINE)
                         Mundo.Servidores[servidorID] = servidor
+                    } else {
+                        if (servidor.puerto != puerto) {
+                            servidor.puerto = puerto
+                        }
                     }
                     _servidor = servidor
                     _servidor!!.ip = _IP.toString()
