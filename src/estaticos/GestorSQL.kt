@@ -168,7 +168,7 @@ object GestorSQL {
                     GestorSalida.ENVIAR_M145_MENSAJE_PANEL_INFORMACION(out, "Campos con caracteres invalidos")
                     return false
                 }
-                if (t.isEmpty()) {
+                if (t.isEmpty) {
                     GestorSalida.ENVIAR_M145_MENSAJE_PANEL_INFORMACION(out, "Campos vacios")
                     return false
                 }

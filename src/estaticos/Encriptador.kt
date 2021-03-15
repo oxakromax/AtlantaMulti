@@ -75,7 +75,7 @@ object Encriptador {
         var l5: Int
         var l7 = ""
         val abecedario = ABC_MIN + ABC_MAY + GUIONES
-        var l1: Int = 0
+        var l1 = 0
         while (l1 <= contraseña.length - 1) {
             l3 = key[l1 / 2].toInt()
             l2 = abecedario.indexOf(contraseña[l1])

@@ -51,7 +51,7 @@ object MainMultiservidor {
     private var LIMITE_JUGADORES = 100
     @JvmStatic
     fun main(args: Array<String>) {
-        Runtime.getRuntime().addShutdownHook(Thread(Runnable { cerrarServer() }))
+        Runtime.getRuntime().addShutdownHook(Thread({ cerrarServer() }))
         println("\tATLANTA LOGIN, PARA ZUFOKIA\n\t\tPor Oxakromax")
         println("\n\nCargando la configuración")
         cargarConfiguracion()
@@ -115,7 +115,7 @@ object MainMultiservidor {
             val comandos = ArrayList<String>()
             while (config.readLine().also { linea = it } != null) {
                 try {
-                    if (linea.isEmpty() || linea.contains("#")){
+                    if (linea.isEmpty || linea.contains("#")){
                         continue
                     }
                     val param = linea.split("=".toRegex()).toTypedArray()[0].trim { it <= ' ' }
