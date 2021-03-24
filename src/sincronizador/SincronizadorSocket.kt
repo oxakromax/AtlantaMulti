@@ -37,7 +37,7 @@ class SincronizadorSocket(socket: Socket?) : Runnable {
                 if (bytes.size == index) {
                     val tempPacket = String(bytes, StandardCharsets.UTF_8)
                     for (packet in tempPacket.split("[\u0000\n\r]".toRegex()).toTypedArray()) {
-                        if (packet.isEmpty) {
+                        if (packet.isEmpty()) {
                             continue
                         }
                         analizarPackets(packet)

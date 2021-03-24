@@ -115,7 +115,7 @@ object MainMultiservidor {
             val comandos = ArrayList<String>()
             while (config.readLine().also { linea = it } != null) {
                 try {
-                    if (linea.isEmpty || linea.contains("#")){
+                    if (linea.isEmpty() || linea.contains("#")) {
                         continue
                     }
                     val param = linea.split("=".toRegex()).toTypedArray()[0].trim { it <= ' ' }

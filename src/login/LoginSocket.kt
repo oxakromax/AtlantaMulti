@@ -14,7 +14,6 @@ import login.LoginServer.Companion.getCantidadIps
 import variables.Cuenta
 import variables.Servidor
 import java.awt.event.ActionEvent
-import java.awt.event.ActionListener
 import java.io.BufferedInputStream
 import java.io.IOException
 import java.io.PrintWriter
@@ -60,7 +59,7 @@ class LoginSocket(socket: Socket?) : Runnable {
                 if (bytes.size == index) {
                     val tempPacket = String(bytes, StandardCharsets.UTF_8)
                     for (packet in tempPacket.split("[\u0000\n\r]".toRegex()).toTypedArray()) {
-                        if (packet.isEmpty) {
+                        if (packet.isEmpty()) {
                             continue
                         }
                         if (MainMultiservidor.MOSTRAR_RECIBIDOS) {
@@ -120,7 +119,7 @@ class LoginSocket(socket: Socket?) : Runnable {
     }
 
     private fun necesitaCompletarDatos(): Boolean {
-        return cuenta!!.actualizar.toInt() == 3 || GestorSQL.GET_APELLIDO(_nombreCuenta).isEmpty
+        return cuenta!!.actualizar.toInt() == 3 || GestorSQL.GET_APELLIDO(_nombreCuenta).isEmpty()
     }
 
     private fun analizar_Packet_Real(packet: String) {
@@ -236,7 +235,7 @@ class LoginSocket(socket: Socket?) : Runnable {
                         if (_timer != null) {
                             _timer!!.start()
                         }
-                        if (GestorSQL.GET_APODO(_nombreCuenta).isEmpty) {
+                        if (GestorSQL.GET_APODO(_nombreCuenta).isEmpty()) {
                             var apodo = Encriptador.palabraAleatorio(12)
                             while (GestorSQL.GET_APODO_EXISTE(apodo)) {
                                 apodo = Encriptador.palabraAleatorio(12)
